@@ -6,12 +6,15 @@ import subprocess
 import numpy as np
 
 
-def install_hyrec() -> None:
+def install_hyrec(clean: bool = False) -> None:
     """Code to install hyrec.
 
     Code downloads, compiles, and sets up hyrec.
+
+    Args:
+        clean: Whether to remove existing hyrec directory before installation.
     """
-    if not os.path.exists("HYREC-2"):
+    if not os.path.exists("HYREC-2") or clean:
         subprocess.run(
             ["git", "clone", "https://github.com/nanoomlee/HYREC-2.git"],
             check=True,
