@@ -4,7 +4,6 @@ import jax
 import jax.numpy as jnp
 
 from hyperfine.recombination.hyrec import call_hyrec, set_up_hyrec
-from hyperfine.recombination.recfast import call_recfast, update_recfast_ini
 from hyperfine.signal.signal import T21, Tcmb, Ts, xc
 from hyperfine.utils.parameters import cosmology
 
@@ -16,7 +15,6 @@ def generate_signal(
     f_grid: jnp.ndarray,
     sample: jnp.ndarray,
     z_init: int,
-    rec_model: str = "recfast",
     detailed_output: bool = False,
     verbose: bool = False,
 ) -> jnp.ndarray | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
@@ -27,7 +25,6 @@ def generate_signal(
         sample: Cosmological parameters [H0, Omega_m, Omega_b, Omega_c,
                 Y_He].
         z_init: Initial redshift.
-        rec_model: Recombination model to use ('recfast' or 'hyrec').
         detailed_output: Whether to return detailed outputs (xe, Tk, xc).
         verbose: Whether to print verbose output from the recombination codes.
 
@@ -45,27 +42,19 @@ def generate_signal(
         Y_He=sample[4],
     )  # Example cosmology parameters
     try:
-        if rec_model == "recfast":
-            update_recfast_ini(cosmo)
-            z_grid = 1420.4 / (f_grid) - 1
-            xe, T_gas = call_recfast(
-                base_dir="./", redshift=z_grid, verbose=verbose
-            )
-            xe, T_gas = jnp.array(xe), jnp.array(T_gas)
-        elif rec_model == "hyrec":
-            set_up_hyrec(
-                H0=cosmo.H0,
-                omb=cosmo.Omega_b,
-                omc=cosmo.Omega_c,
-                omk=0.0,
-                yhe=cosmo.Y_He,
-                base_dir="./",
-            )
-            z_grid = 1420.4 / (f_grid) - 1
-            xe, T_gas = call_hyrec(
-                base_dir="./", redshift=z_grid, verbose=verbose
-            )
-            xe, T_gas = jnp.array(xe), jnp.array(T_gas)
+        set_up_hyrec(
+            H0=cosmo.H0,
+            omb=cosmo.Omega_b,
+            omc=cosmo.Omega_c,
+            omk=0.0,
+            yhe=cosmo.Y_He,
+            base_dir="./",
+        )
+        z_grid = 1420.4 / (f_grid) - 1
+        xe, T_gas = call_hyrec(
+            base_dir="./", redshift=z_grid, verbose=verbose
+        )
+        xe, T_gas = jnp.array(xe), jnp.array(T_gas)
 
         xc_values = xcvmap(z_grid, xe, T_gas, cosmo)
 
