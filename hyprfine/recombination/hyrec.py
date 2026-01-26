@@ -108,7 +108,7 @@ def set_up_hyrec(
     data["Omega_k"] = str(omk)
     data["Y_He"] = str(yhe)
 
-    with open(base_dir + "hyrec_input.dat", "w") as file:
+    with open("HYREC-2/new_input.dat", "w") as file:
         for key, value in data.items():
             file.write(value + "\n")
 
@@ -133,12 +133,11 @@ def call_hyrec(
     # need to be in the hyrec dirtectory to run...
     os.chdir("HYREC-2")
     if verbose:
-        os.system("./hyrec < ../" + base_dir + "/hyrec_input.dat")
+        os.system("./hyrec < " + "new_input.dat")
     else:
         os.system(
-            "./hyrec < ../"
-            + base_dir
-            + "/hyrec_input.dat"
+            "./hyrec < "
+            + "new_input.dat"
             + "> /dev/null 2>&1"
         )
     os.chdir("..")
