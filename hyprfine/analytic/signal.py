@@ -3,8 +3,8 @@
 import jax
 import jax.numpy as jnp
 
-from hyperfine.utils.comsology import n_H_tot
-from hyperfine.utils.parameters import const, cosmology
+from hyprfine.utils.comsology import n_H_tot
+from hyprfine.utils.parameters import const, cosmology
 
 
 @jax.jit
@@ -119,7 +119,7 @@ def T21(
         54
         * (1 - xe)
         * ((1 - cosmo.Y_He) / 0.76)
-        * (cosmo.Omega_bh2)
+        * (cosmo.Omega_b * (cosmo.H0 / 100) ** 2)
         / 0.02242
         * jnp.sqrt(
             0.1424 / (cosmo.Omega_m * (cosmo.H0 / 100) ** 2) * ((1 + z) / 40)

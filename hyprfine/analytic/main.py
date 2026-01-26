@@ -13,7 +13,7 @@ vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, 0, None))
 
 def generate_signal(
     f_grid: jnp.ndarray,
-    sample: jnp.ndarray,
+    cosmo: cosmology,
     z_init: int,
     detailed_output: bool = False,
     verbose: bool = False,
@@ -22,7 +22,7 @@ def generate_signal(
 
     Args:
         f_grid: Frequency grid in MHz.
-        sample: Cosmological parameters [H0, Omega_m, Omega_b, Omega_c,
+        cosmo: Cosmological parameters [H0, Omega_m, Omega_b, Omega_c,
                 Y_He].
         z_init: Initial redshift.
         detailed_output: Whether to return detailed outputs (xe, Tk, xc).
@@ -31,16 +31,6 @@ def generate_signal(
     Returns:
         T21_values: 21cm brightness temperature values over the frequency grid.
     """
-    cosmo = cosmology(
-        H0=sample[0],
-        Omega_m=sample[1],
-        Omega_b=sample[2] / (sample[0] / 100) ** 2,
-        Omega_c=sample[3] / (sample[0] / 100) ** 2,
-        Omega_bh2=sample[2],
-        Omega_ch2=sample[3],
-        z_init=z_init,
-        Y_He=sample[4],
-    )  # Example cosmology parameters
     try:
         set_up_hyrec(
             H0=cosmo.H0,
@@ -51,9 +41,7 @@ def generate_signal(
             base_dir="./",
         )
         z_grid = 1420.4 / (f_grid) - 1
-        xe, T_gas = call_hyrec(
-            base_dir="./", redshift=z_grid, verbose=verbose
-        )
+        xe, T_gas = call_hyrec(base_dir="./", redshift=z_grid, verbose=verbose)
         xe, T_gas = jnp.array(xe), jnp.array(T_gas)
 
         xc_values = xcvmap(z_grid, xe, T_gas, cosmo)
@@ -68,5 +56,5 @@ def generate_signal(
         else:
             return T21_values
     except Exception as e:
-        print(f"Error generating signal for sample {sample}: {e}")
+        print(f"Error generating signal for sample {cosmo}: {e}")
         return jnp.full_like(f_grid, jnp.nan)
