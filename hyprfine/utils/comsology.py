@@ -3,7 +3,7 @@
 import jax
 import jax.numpy as jnp
 
-from hyprfine.utils.parameters import const, cosmology
+from hyprfine.parameters import const, cosmology
 
 
 @jax.jit
