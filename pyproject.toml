@@ -3,9 +3,9 @@ requires = ["setuptools>=77.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hyperfine"
+name = "hyprfine"
 version = "0.1.0"
-description = "hyperfine: Simulation tools for 21cm Cosmology."
+description = "hyprfine: Simulation tools for 21cm Cosmology."
 readme = "README.md"
 authors = [
     {name = "Harry T. J. Bevins", email = "htjb2@cam.ac.uk"}]
@@ -43,7 +43,7 @@ docs = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["hyperfine*"]
+include = ["hyprfine*"]
 
 [tool.ruff]
 line-length = 79
