@@ -26,7 +26,6 @@ def fstar(
     Returns:
         fstar: Star formation efficiency.
     """
-    print(alpha_star, beta_star, M_pivot)
     M_turn = 3.3e7  # from zeus21 code
     f_duty = jnp.exp(-M_turn / M_h)
     f_star = (2.0 * epsilon * f_duty) / (
@@ -48,13 +47,13 @@ def dmh_dt(m_h: jnp.ndarray, z: jnp.ndarray) -> jnp.ndarray:
     return m_h * (1 + z) ** 2.5
 
 
-def sigma0(Mh: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
+def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Calculate the variance of the density field.
 
-    At mass scale Mh and redshift z=0.
+    At smoothing scale R and redshift z=0.
 
     Args:
-        Mh: Halo mass in solar masses.
+        R: Smoothing scale in Mpc.
         cosmo: cosmology parameters.
 
     Returns:
@@ -69,17 +68,6 @@ def sigma0(Mh: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
         )
         return k**2 / (2 * jnp.pi**2) * pk * jnp.abs(window_func) ** 2
 
-    R = (
-        3
-        * Mh
-        / (
-            4
-            * jnp.pi
-            * const.rhom
-            * (cosmo.Omega_b + cosmo.Omega_c)
-            * (cosmo.H0 / 100) ** 2
-        )
-    ) ** (1 / 3)  # in Mpc
     kmodes, power = matterpowerspec(cosmo, z=0)
     vmapped_integrand = jax.vmap(integrand, (0, 0, None))
     integrand_values = jnp.array(
@@ -135,7 +123,18 @@ def sigma(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     Returns:
         sigma: Variance of the density field at mass scale Mh and redshift z.
     """
-    sigma0_Mh = sigma0(Mh, cosmo)
+    R = (
+        3
+        * Mh
+        / (
+            4
+            * jnp.pi
+            * const.rhom
+            * (cosmo.Omega_b + cosmo.Omega_c)
+            * (cosmo.H0 / 100) ** 2
+        )
+    ) ** (1 / 3)  # in Mpc
+    sigma0_Mh = sigma0(R, cosmo)
     D_z = growth_factor(z, cosmo=cosmo)
     return sigma0_Mh * D_z
 
@@ -220,3 +219,70 @@ def mean_sfrd(
     )
     dn_dmh_val = dn_dmh(Mh, cosmo, z)
     return jnp.trapezoid(dmstar_dt_val * dn_dmh_val, Mh)
+
+
+def delta_r(
+    R: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray, key: jnp.ndarray
+) -> jnp.ndarray:
+    """Calculate the smoothed matter overdensity.
+
+    Args:
+        R: Smoothing scale in Mpc.
+        cosmo: cosmology parameters.
+        z: Redshift.
+        key: JAX random key for generating the overdensity.
+
+    Returns:
+        delta_r: Critical overdensity for collapse.
+    """
+    sigma0_R = sigma0(R, cosmo)
+    D_z = growth_factor(z, cosmo=cosmo)
+    sigma_val = sigma0_R * D_z
+    return jax.random.normal(key, shape=R.shape) * sigma_val, sigma_val
+
+
+def sfrd(
+    R: jnp.ndarray,
+    Mmin: jnp.ndarray,
+    Mmax: jnp.ndarray,
+    epsilon: jnp.ndarray,
+    alpha_star: jnp.ndarray,
+    beta_star: jnp.ndarray,
+    M_pivot: jnp.ndarray,
+    cosmo: cosmology,
+    z: jnp.ndarray,
+    key: jnp.ndarray,
+) -> jnp.ndarray:
+    """Calculate the star formation rate density (SFRD) at smoothing scale R.
+
+    Args:
+        R: Smoothing scale in Mpc.
+        Mmin: Minimum halo mass in solar masses.
+        Mmax: Maximum halo mass in solar masses.
+        epsilon: Normalization of the star formation efficiency.
+        alpha_star: Power-law index for low-mass halos.
+        beta_star: Power-law index for high-mass halos.
+        M_pivot: Turnover mass in solar masses.
+        cosmo: cosmology parameters.
+        z: Redshift.
+        key: JAX random key for generating the overdensity.
+
+    Returns:
+        SFRD: Star formation rate density in solar masses per year
+            per cubic megaparsec.
+    """
+    key, subkey = jax.random.split(key)
+    deltar, sigma_R = delta_r(R, cosmo, z, subkey)
+    mean_sfrd_val = mean_sfrd(
+        z,
+        jnp.linspace(Mmin, Mmax, 100),
+        epsilon,
+        alpha_star,
+        beta_star,
+        M_pivot,
+        cosmo,
+    )
+    gamma_r = 0.5
+    return mean_sfrd_val * jnp.exp(
+        gamma_r * deltar - 0.5 * gamma_r**2 * sigma_R**2
+    )
