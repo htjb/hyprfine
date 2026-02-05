@@ -3,9 +3,10 @@
 import jax
 import jax.numpy as jnp
 
-from hyprfine.analytic.signal import T21, Tcmb, Ts, xc
-from hyprfine.recombination.hyrec import call_hyrec, set_up_hyrec
+from hyprfine.analytic.coupling_coeffs import xc
+from hyprfine.analytic.signal import T21, Tcmb, Ts
 from hyprfine.parameters import cosmology
+from hyprfine.recombination.hyrec import call_hyrec, set_up_hyrec
 
 xcvmap = jax.vmap(xc, in_axes=(0, 0, 0, None))
 vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, 0, None))
