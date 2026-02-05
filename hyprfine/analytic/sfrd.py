@@ -189,3 +189,34 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     fnu = -Ast * (1 + (nu ** (-2 * Pst))) * jnp.exp(-(nu**2) / 2)
     dsigma_dMh = jnp.gradient(sigma_val, Mh)
     return fnu * (const.rhom / Mh) * (dsigma_dMh / sigma_val)
+
+
+def mean_sfrd(
+    z: jnp.ndarray,
+    Mh: jnp.ndarray,
+    epsilon: jnp.ndarray,
+    alpha_star: jnp.ndarray,
+    beta_star: jnp.ndarray,
+    M_pivot: jnp.ndarray,
+    cosmo: cosmology,
+) -> jnp.ndarray:
+    """Calculate the star formation rate density (SFRD).
+
+    Args:
+        Mh: Halo mass in solar masses.
+        z: Redshift.
+        epsilon: Normalization of the star formation efficiency.
+        alpha_star: Power-law index for low-mass halos.
+        beta_star: Power-law index for high-mass halos.
+        M_pivot: Turnover mass in solar masses.
+        cosmo: cosmology parameters.
+
+    Returns:
+        SFRD: Star formation rate density in solar masses per year
+            per cubic megaparsec.
+    """
+    dmstar_dt_val = dmstar_dt(
+        Mh, z, epsilon, alpha_star, beta_star, M_pivot, cosmo
+    )
+    dn_dmh_val = dn_dmh(Mh, cosmo, z)
+    return jnp.trapezoid(dmstar_dt_val * dn_dmh_val, Mh)
