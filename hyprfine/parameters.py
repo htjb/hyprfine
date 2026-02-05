@@ -4,13 +4,7 @@ from collections import namedtuple
 
 cosmology = namedtuple(
     "cosmo",
-    [
-        "H0",
-        "Omega_m",
-        "Omega_b",
-        "Omega_c",
-        "Y_He",
-    ],
+    ["H0", "Omega_m", "Omega_b", "Omega_c", "Y_He", "ns", "ln1010As"],
 )
 
 
@@ -25,6 +19,7 @@ constants = namedtuple(
         "Tcmb0",  # CMB temperature today in K
         "m_e",  # electron mass
         "k_b",  # Boltzmann constant
+        "rhom",  # mean matter density in M_sun/Mpc^3
     ],
 )
 
@@ -37,4 +32,5 @@ const = constants(
     Tcmb0=2.725,  # K
     m_e=9.109e-31,  # kg
     k_b=1.380649e-23,
+    rhom=2.775e11,  # M_sun/Mpc^3
 )

@@ -3,36 +3,7 @@
 import jax
 import jax.numpy as jnp
 
-from hyprfine.parameters import const, cosmology
-
-
-@jax.jit
-def Tcmb(z: int) -> jnp.ndarray:
-    """Calculate CMB temperature at redshift z.
-
-    Args:
-        z: Redshift.
-
-    Returns:
-        T: CMB temperature in Kelvin.
-    """
-    T = const.Tcmb0 * (1 + z)  # CMB temperature in Kelvin, scaled by redshift
-    return T
-
-
-def Ts(T_gas: jnp.ndarray, T_cmb: jnp.ndarray, xc: jnp.ndarray) -> jnp.ndarray:
-    """Calculate spin temperature.
-
-    Args:
-        T_gas: Kinetic temperature in Kelvin.
-        T_cmb: CMB temperature in Kelvin.
-        xc: Coupling coefficient.
-
-    Returns:
-        Tspin: Spin temperature in Kelvin.
-    """
-    Tspin = (T_cmb ** (-1) + xc * T_gas ** (-1)) / (1 + xc)
-    return Tspin ** (-1)
+from hyprfine.parameters import cosmology
 
 
 @jax.jit

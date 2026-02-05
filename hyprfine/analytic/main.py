@@ -4,7 +4,8 @@ import jax
 import jax.numpy as jnp
 
 from hyprfine.analytic.coupling_coeffs import xc
-from hyprfine.analytic.signal import T21, Tcmb, Ts
+from hyprfine.analytic.signal import T21
+from hyprfine.analytic.temperatures import Tcmb, Ts
 from hyprfine.parameters import cosmology
 from hyprfine.recombination.hyrec import call_hyrec, set_up_hyrec
 
