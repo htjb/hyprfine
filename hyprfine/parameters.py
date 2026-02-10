@@ -19,7 +19,8 @@ constants = namedtuple(
         "Tcmb0",  # CMB temperature today in K
         "m_e",  # electron mass
         "k_b",  # Boltzmann constant
-        "rhom",  # mean matter density in M_sun/Mpc^3
+        "Msun",  # Solar mass in kg
+        "Mpc",  # Megaparsec in meters
     ],
 )
 
@@ -32,5 +33,6 @@ const = constants(
     Tcmb0=2.725,  # K
     m_e=9.109e-31,  # kg
     k_b=1.380649e-23,
-    rhom=2.775e11,  # M_sun/Mpc^3
+    Msun=1.989e30,  # kg
+    Mpc=3.086e22,  # m
 )
