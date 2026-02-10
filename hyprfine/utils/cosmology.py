@@ -35,12 +35,16 @@ def rhom(z: int, cosmo: cosmology) -> jnp.ndarray:
         rhom: Mean matter density in M_sun/Mpc^3.
     """
     H0 = cosmo.H0 * 1e3 / const.Mpc
+
     rho_bar = (
         (3 * H0**2 / (8 * jnp.pi * const.G))
         * (cosmo.Omega_b + cosmo.Omega_c)
         * (1 + z) ** 3
     )
-    return rho_bar / const.Msun * (const.Mpc) ** 3
+
+    conversion_factor = const.Mpc**3 / const.Msun
+
+    return rho_bar * conversion_factor
 
 
 def growth_factor(z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:

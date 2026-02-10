@@ -4,7 +4,8 @@ import jax
 import jax.numpy as jnp
 
 from hyprfine.matterpower import matterpowerspec
-from hyprfine.parameters import const, cosmology
+from hyprfine.parameters import cosmology
+from hyprfine.utils.cosmology import growth_factor, rhom
 
 
 def fstar(
@@ -26,7 +27,7 @@ def fstar(
     Returns:
         fstar: Star formation efficiency.
     """
-    M_turn = 3.3e7  # from zeus21 code
+    M_turn = 3.3e7  # from zeus21 code in Msun
     f_duty = jnp.exp(-M_turn / M_h)
     f_star = (2.0 * epsilon * f_duty) / (
         (M_h / M_pivot) ** (-alpha_star) + (M_h / M_pivot) ** (-beta_star)
@@ -34,17 +35,17 @@ def fstar(
     return f_star
 
 
-def dmh_dt(m_h: jnp.ndarray, z: jnp.ndarray) -> jnp.ndarray:
+def dmh_dt(M_h: jnp.ndarray, z: jnp.ndarray) -> jnp.ndarray:
     """Calculate the halo mass accretion rate.
 
     Args:
-        m_h: Halo mass in solar masses.
+        M_h: Halo mass in solar masses.
         z: Redshift.
 
     Returns:
         dm_h/dt: Halo mass accretion rate in solar masses per year.
     """
-    return m_h * (1 + z) ** 2.5
+    return M_h * (1 + z) ** 2.5
 
 
 def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
@@ -63,53 +64,38 @@ def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     def integrand(
         k: jnp.ndarray, pk: jnp.ndarray, R: jnp.ndarray
     ) -> jnp.ndarray:
+        """Integrand for calculating sigma0.
+
+        The product k * R is dimesionless, so the window function is
+        dimensionless as well. k**2 * pk has dimensions of
+        (Mpc/h)^3 * (h/Mpc)^2 = Mpc/ h so to convert the
+        integrand to physical units we multiply by (H0/100).
+
+        Args:
+            k: Wavenumber in h/Mpc.
+            pk: Matter power spectrum in (Mpc/h)^3.
+            R: Smoothing scale in Mpc/h
+        """
         window_func = (
             3 * (jnp.sin(R * k) - k * R * jnp.cos(R * k)) / (R * k) ** 3
         )
-        return k**2 / (2 * jnp.pi**2) * pk * jnp.abs(window_func) ** 2
+        return (
+            k**2
+            / (2 * jnp.pi**2)
+            * pk
+            * jnp.abs(window_func) ** 2
+            * (cosmo.H0 / 100.0)
+        )
 
-    kmodes, power = matterpowerspec(cosmo, z=0)
+    kmodes, power = matterpowerspec(cosmo, z=0)  # in h/Mpc and (Mpc/h)^3
+    R_h = R * cosmo.H0 / 100.0  # Convert R from Mpc to Mpc/h
     vmapped_integrand = jax.vmap(integrand, (0, 0, None))
     integrand_values = jnp.array(
-        [vmapped_integrand(kmodes, power, r) for r in R]
+        [vmapped_integrand(kmodes, power, r) for r in R_h]
     )
     sigma_squared = jnp.trapezoid(integrand_values, kmodes, axis=1)
     sigma = jnp.sqrt(sigma_squared)
     return sigma
-
-
-def growth_factor(z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
-    """Linear growth factor D(z), normalized to D(0)=1.
-
-    Valid for flat LCDM.
-
-    Args:
-        z: Redshift.
-        cosmo: cosmology parameters.
-
-    Returns:
-        D(z): Linear growth factor at redshift z.
-    """
-    Omega_m0 = cosmo.Omega_b + cosmo.Omega_c
-    Omega_L0 = 1.0 - Omega_m0
-
-    def E2(z: jnp.ndarray) -> jnp.ndarray:
-        return Omega_m0 * (1 + z) ** 3 + Omega_L0
-
-    def Omega_m(z: jnp.ndarray) -> jnp.ndarray:
-        return Omega_m0 * (1 + z) ** 3 / E2(z)
-
-    def Omega_L(z: jnp.ndarray) -> jnp.ndarray:
-        return Omega_L0 / E2(z)
-
-    def g(z: jnp.ndarray) -> jnp.ndarray:
-        Om = Omega_m(z)
-        Ol = Omega_L(z)
-        return (5 * Om / 2) / (
-            Om ** (4 / 7) - Ol + (1 + Om / 2) * (1 + Ol / 70)
-        )
-
-    return g(z) / (g(0.0) * (1 + z))
 
 
 def sigma(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
@@ -125,17 +111,16 @@ def sigma(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     """
     R = (
         3
-        * Mh
+        * Mh  # in M_sun
         / (
-            4
-            * jnp.pi
-            * const.rhom
-            * (cosmo.Omega_b + cosmo.Omega_c)
-            * (cosmo.H0 / 100) ** 2
+            4 * jnp.pi * rhom(0, cosmo)  # in M_sun/Mpc^3
         )
     ) ** (1 / 3)  # in Mpc
+
     sigma0_Mh = sigma0(R, cosmo)
+
     D_z = growth_factor(z, cosmo=cosmo)
+    print(f"R={R}, sigma0={sigma0_Mh}, D(z)={D_z}")
     return sigma0_Mh * D_z
 
 
@@ -185,9 +170,13 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     delta_crit = 1.686
     sigma_val = sigma(Mh, cosmo, z)
     nu = jnp.sqrt(qst) * delta_crit / sigma_val
-    fnu = -Ast * (1 + (nu ** (-2 * Pst))) * jnp.exp(-(nu**2) / 2)
-    dsigma_dMh = jnp.gradient(sigma_val, Mh)
-    return fnu * (const.rhom / Mh) * (dsigma_dMh / sigma_val)
+    fnu = Ast * (1 + (nu ** (-2 * Pst))) * jnp.exp(-(nu**2) / 2)
+
+    # Compute d(ln sigma)/d(ln M) numerically
+    dln_sigma_dln_M = jnp.gradient(jnp.log(sigma_val), jnp.log(Mh))
+
+    rhomatter = rhom(z, cosmo)
+    return fnu * (rhomatter / Mh) * jnp.abs(dln_sigma_dln_M)
 
 
 def mean_sfrd(
