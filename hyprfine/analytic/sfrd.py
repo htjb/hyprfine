@@ -205,8 +205,8 @@ def mean_sfrd(
     """
     dmstar_dt_val = dmstar_dt(
         Mh, z, epsilon, alpha_star, beta_star, M_pivot, cosmo
-    )
-    dn_dmh_val = dn_dmh(Mh, cosmo, z)
+    ) # in solar masses per year !need to check??
+    dn_dmh_val = dn_dmh(Mh, cosmo, z) # in number density per solar mass per Mpc^3
     return jnp.trapezoid(dmstar_dt_val * dn_dmh_val, Mh)
 
 
