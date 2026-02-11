@@ -46,11 +46,8 @@ def dmh_dt(M_h: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     Returns:
         dm_h/dt: Halo mass accretion rate in solar masses per year.
     """
-    # Convert H0 from km/s/Mpc to yr^-1:
-    # H0 [km/s/Mpc] * 1e3 [m/km] / Mpc [m] * yr [s/yr] = yr^-1
-    H0_per_year = cosmo.H0 * 1e3 / const.Mpc * const.yr
-    A = 0.79 * H0_per_year * jnp.sqrt(cosmo.Omega_b + cosmo.Omega_c)
-    return M_h * (1 + z) ** 2.5 * A
+    omega_L = 1 - cosmo.Omega_m
+    return 46.1 * (M_h / 1e12)**1.1 *(1 + 1.11*z) * jnp.sqrt(cosmo.Omega_m*(1+z)**3 + omega_L)
 
 
 def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
@@ -179,7 +176,7 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     dln_sigma_dln_M = jnp.gradient(jnp.log(sigma_val), jnp.log(Mh))
 
     rhomatter = rhom(z, cosmo)
-    return fnu * (rhomatter / Mh) * jnp.abs(dln_sigma_dln_M)
+    return fnu * (rhomatter / Mh**2) * jnp.abs(dln_sigma_dln_M)
 
 
 def mean_sfrd(
