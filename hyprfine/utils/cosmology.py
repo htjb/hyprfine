@@ -17,7 +17,7 @@ def n_H_tot(z: int, cosmo: cosmology) -> jnp.ndarray:
     Returns:
         n_H: Mean hydrogen number density in m^-3.
     """
-    H0 = cosmo.H0 * 1e3 / 3.086e22
+    H0 = cosmo.H0 * 1e3 / const.Mpc  # Convert H0 from km/s/Mpc to s^-1
     rho_bar = (
         (3 * H0**2 / (8 * jnp.pi * const.G)) * cosmo.Omega_b * (1 + z) ** 3
     )
@@ -40,11 +40,11 @@ def rhom(z: int, cosmo: cosmology) -> jnp.ndarray:
         (3 * H0**2 / (8 * jnp.pi * const.G))
         * (cosmo.Omega_b + cosmo.Omega_c)
         * (1 + z) ** 3
-    )
+    ) # in kg/m^3
 
     conversion_factor = const.Mpc**3 / const.Msun
 
-    return rho_bar * conversion_factor
+    return rho_bar * conversion_factor # in M_sun/Mpc^3
 
 
 def growth_factor(z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
