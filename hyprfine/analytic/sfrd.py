@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 
 from hyprfine.matterpower import matterpowerspec
-from hyprfine.parameters import cosmology
+from hyprfine.parameters import const, cosmology
 from hyprfine.utils.cosmology import growth_factor, rhom
 
 
@@ -35,17 +35,22 @@ def fstar(
     return f_star
 
 
-def dmh_dt(M_h: jnp.ndarray, z: jnp.ndarray) -> jnp.ndarray:
+def dmh_dt(M_h: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Calculate the halo mass accretion rate.
 
     Args:
         M_h: Halo mass in solar masses.
         z: Redshift.
+        cosmo: cosmology parameters.
 
     Returns:
         dm_h/dt: Halo mass accretion rate in solar masses per year.
     """
-    return M_h * (1 + z) ** 2.5
+    # Convert H0 from km/s/Mpc to yr^-1:
+    # H0 [km/s/Mpc] * 1e3 [m/km] / Mpc [m] * yr [s/yr] = yr^-1
+    H0_per_year = cosmo.H0 * 1e3 / const.Mpc * const.yr
+    A = 0.79 * H0_per_year * jnp.sqrt(cosmo.Omega_b + cosmo.Omega_c)
+    return M_h * (1 + z) ** 2.5 * A
 
 
 def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
@@ -66,10 +71,10 @@ def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     ) -> jnp.ndarray:
         """Integrand for calculating sigma0.
 
-        The product k * R is dimesionless, so the window function is
-        dimensionless as well. k**2 * pk has dimensions of
-        (Mpc/h)^3 * (h/Mpc)^2 = Mpc/ h so to convert the
-        integrand to physical units we multiply by (H0/100).
+        With k in h/Mpc, P(k) in (Mpc/h)^3, and R in Mpc/h,
+        the product k*R is dimensionless and the full integrand
+        k^2 * P(k) * W^2(kR) * dk is dimensionless, as required
+        for sigma^2. No extra h factor is needed.
 
         Args:
             k: Wavenumber in h/Mpc.
@@ -84,7 +89,6 @@ def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
             / (2 * jnp.pi**2)
             * pk
             * jnp.abs(window_func) ** 2
-            * (cosmo.H0 / 100.0)
         )
 
     kmodes, power = matterpowerspec(cosmo, z=0)  # in h/Mpc and (Mpc/h)^3
@@ -120,7 +124,6 @@ def sigma(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     sigma0_Mh = sigma0(R, cosmo)
 
     D_z = growth_factor(z, cosmo=cosmo)
-    print(f"R={R}, sigma0={sigma0_Mh}, D(z)={D_z}")
     return sigma0_Mh * D_z
 
 
@@ -149,7 +152,7 @@ def dmstar_dt(
     """
     f_star = fstar(epsilon, alpha_star, beta_star, M_pivot, m_h)
     f_b = cosmo.Omega_b / cosmo.Omega_m
-    dm_h_dt = dmh_dt(m_h, z)
+    dm_h_dt = dmh_dt(m_h, z, cosmo)
     return f_star * f_b * dm_h_dt
 
 
@@ -176,7 +179,7 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     dln_sigma_dln_M = jnp.gradient(jnp.log(sigma_val), jnp.log(Mh))
 
     rhomatter = rhom(z, cosmo)
-    return fnu * (rhomatter / Mh) * jnp.abs(dln_sigma_dln_M)
+    return fnu * (rhomatter / Mh**2) * jnp.abs(dln_sigma_dln_M)
 
 
 def mean_sfrd(
@@ -205,14 +208,16 @@ def mean_sfrd(
     """
     dmstar_dt_val = dmstar_dt(
         Mh, z, epsilon, alpha_star, beta_star, M_pivot, cosmo
-    ) # in solar masses per year !need to check??
-    dn_dmh_val = dn_dmh(Mh, cosmo, z) # in number density per solar mass per Mpc^3
+    )  # in solar masses per year !need to check??
+    dn_dmh_val = dn_dmh(
+        Mh, cosmo, z
+    )  # in number density per solar mass per Mpc^3
     return jnp.trapezoid(dmstar_dt_val * dn_dmh_val, Mh)
 
 
 def delta_r(
     R: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray, key: jnp.ndarray
-) -> jnp.ndarray:
+) -> tuple[jnp.ndarray, jnp.ndarray]:
     """Calculate the smoothed matter overdensity.
 
     Args:
@@ -264,7 +269,7 @@ def sfrd(
     deltar, sigma_R = delta_r(R, cosmo, z, subkey)
     mean_sfrd_val = mean_sfrd(
         z,
-        jnp.linspace(Mmin, Mmax, 100),
+        jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100),
         epsilon,
         alpha_star,
         beta_star,
