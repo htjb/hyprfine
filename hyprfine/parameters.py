@@ -21,6 +21,7 @@ constants = namedtuple(
         "k_b",  # Boltzmann constant
         "Msun",  # Solar mass in kg
         "Mpc",  # Megaparsec in meters
+        "yr",  # Year in seconds
     ],
 )
 
@@ -35,4 +36,5 @@ const = constants(
     k_b=1.380649e-23,
     Msun=1.989e30,  # kg
     Mpc=3.086e22,  # m
+    yr=3.154e7,  # s
 )
