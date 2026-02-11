@@ -27,7 +27,7 @@ constants = namedtuple(
 
 const = constants(
     c=2.99792458e8,  # m/s
-    G=6.67430e-11,  # c in m/s, G in m^3/(kg*s^2)
+    G=6.67430e-11,  # G in m^3/(kg*s^2)
     m_p=1.67e-27,  # kg
     A10=2.85e-15,  # s^-1
     Tstar=0.06817,  # K
