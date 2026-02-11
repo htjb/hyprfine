@@ -169,17 +169,17 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     """
     Pst = 0.3
     Ast = 0.3222 * jnp.sqrt(2 / jnp.pi)
-    qst = 0.85
+    qst = 0.707
     delta_crit = 1.686
     sigma_val = sigma(Mh, cosmo, z)
     nu = jnp.sqrt(qst) * delta_crit / sigma_val
-    fnu = Ast * (1 + (nu ** (-2 * Pst))) * jnp.exp(-(nu**2) / 2)
+    fnu = Ast * nu * (1 + (nu ** (-2 * Pst))) * jnp.exp(-(nu**2) / 2)
 
     # Compute d(ln sigma)/d(ln M) numerically
     dln_sigma_dln_M = jnp.gradient(jnp.log(sigma_val), jnp.log(Mh))
 
     rhomatter = rhom(z, cosmo)
-    return fnu * (rhomatter / Mh**2) * jnp.abs(dln_sigma_dln_M)
+    return fnu * (rhomatter / Mh) * jnp.abs(dln_sigma_dln_M)
 
 
 def mean_sfrd(
@@ -269,7 +269,7 @@ def sfrd(
     deltar, sigma_R = delta_r(R, cosmo, z, subkey)
     mean_sfrd_val = mean_sfrd(
         z,
-        jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100),
+        10**jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100),
         epsilon,
         alpha_star,
         beta_star,
