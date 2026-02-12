@@ -22,6 +22,9 @@ constants = namedtuple(
         "Msun",  # Solar mass in kg
         "Mpc",  # Megaparsec in meters
         "yr",  # Year in seconds
+        "lyman_alpha_freq", # Ly-α frequency in Hz
+        "lyman_beta_freq", # Ly-β frequency in Hz
+        "lyman_limit", # Lyman limit frequency in Hz
     ],
 )
 
@@ -37,4 +40,7 @@ const = constants(
     Msun=1.989e30,  # kg
     Mpc=3.086e22,  # m
     yr=3.154e7,  # s
+    lyman_alpha_freq=2.466e15, # Hz
+    lyman_beta_freq=2.922e15, # Hz lyman_limit=3.289e15, # Hz
+    lyman_limit=3.289e15, # Hz
 )
