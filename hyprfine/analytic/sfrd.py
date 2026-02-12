@@ -3,9 +3,8 @@
 import jax
 import jax.numpy as jnp
 
-from hyprfine.matterpower import matterpowerspec
-from hyprfine.parameters import const, cosmology
-from hyprfine.utils.cosmology import growth_factor, rhom
+from hyprfine.parameters import cosmology
+from hyprfine.utils.cosmology import growth_factor, rhom, sigma, sigma0
 
 
 def fstar(
@@ -47,81 +46,12 @@ def dmh_dt(M_h: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
         dm_h/dt: Halo mass accretion rate in solar masses per year.
     """
     omega_L = 1 - cosmo.Omega_m
-    return 46.1 * (M_h / 1e12)**1.1 *(1 + 1.11*z) * jnp.sqrt(cosmo.Omega_m*(1+z)**3 + omega_L)
-
-
-def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
-    """Calculate the variance of the density field.
-
-    At smoothing scale R and redshift z=0.
-
-    Args:
-        R: Smoothing scale in Mpc.
-        cosmo: cosmology parameters.
-
-    Returns:
-        sigma0: Variance of the density field at mass scale Mh.
-    """
-
-    def integrand(
-        k: jnp.ndarray, pk: jnp.ndarray, R: jnp.ndarray
-    ) -> jnp.ndarray:
-        """Integrand for calculating sigma0.
-
-        With k in h/Mpc, P(k) in (Mpc/h)^3, and R in Mpc/h,
-        the product k*R is dimensionless and the full integrand
-        k^2 * P(k) * W^2(kR) * dk is dimensionless, as required
-        for sigma^2. No extra h factor is needed.
-
-        Args:
-            k: Wavenumber in h/Mpc.
-            pk: Matter power spectrum in (Mpc/h)^3.
-            R: Smoothing scale in Mpc/h
-        """
-        window_func = (
-            3 * (jnp.sin(R * k) - k * R * jnp.cos(R * k)) / (R * k) ** 3
-        )
-        return (
-            k**2
-            / (2 * jnp.pi**2)
-            * pk
-            * jnp.abs(window_func) ** 2
-        )
-
-    kmodes, power = matterpowerspec(cosmo, z=0)  # in h/Mpc and (Mpc/h)^3
-    R_h = R * cosmo.H0 / 100.0  # Convert R from Mpc to Mpc/h
-    vmapped_integrand = jax.vmap(integrand, (0, 0, None))
-    integrand_values = jnp.array(
-        [vmapped_integrand(kmodes, power, r) for r in R_h]
+    return (
+        46.1
+        * (M_h / 1e12) ** 1.1
+        * (1 + 1.11 * z)
+        * jnp.sqrt(cosmo.Omega_m * (1 + z) ** 3 + omega_L)
     )
-    sigma_squared = jnp.trapezoid(integrand_values, kmodes, axis=1)
-    sigma = jnp.sqrt(sigma_squared)
-    return sigma
-
-
-def sigma(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
-    """Calculate the variance of the density field at redshift z.
-
-    Args:
-        Mh: Halo mass in solar masses.
-        cosmo: cosmology parameters.
-        z: Redshift.
-
-    Returns:
-        sigma: Variance of the density field at mass scale Mh and redshift z.
-    """
-    R = (
-        3
-        * Mh  # in M_sun
-        / (
-            4 * jnp.pi * rhom(0, cosmo)  # in M_sun/Mpc^3
-        )
-    ) ** (1 / 3)  # in Mpc
-
-    sigma0_Mh = sigma0(R, cosmo)
-
-    D_z = growth_factor(z, cosmo=cosmo)
-    return sigma0_Mh * D_z
 
 
 def dmstar_dt(
@@ -175,7 +105,7 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     # Compute d(ln sigma)/d(ln M) numerically
     dln_sigma_dln_M = jnp.gradient(jnp.log(sigma_val), jnp.log(Mh))
 
-    rhomatter = rhom(z, cosmo)
+    rhomatter = rhom(0, cosmo)
     return fnu * (rhomatter / Mh**2) * jnp.abs(dln_sigma_dln_M)
 
 
@@ -266,7 +196,7 @@ def sfrd(
     deltar, sigma_R = delta_r(R, cosmo, z, subkey)
     mean_sfrd_val = mean_sfrd(
         z,
-        10**jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100),
+        10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100),
         epsilon,
         alpha_star,
         beta_star,
