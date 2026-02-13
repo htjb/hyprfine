@@ -4,7 +4,25 @@ from collections import namedtuple
 
 cosmology = namedtuple(
     "cosmo",
-    ["H0", "Omega_m", "Omega_b", "Omega_c", "Y_He", "ns", "ln1010As"],
+    [
+        "H0",  # Hubble constant in km/s/Mpc
+        "Omega_m",  # Matter density parameter
+        "Omega_b",  # Baryon density parameter
+        "Omega_c",  # Cold dark matter density parameter
+        "Y_He",  # Helium mass fraction
+        "ns",  # scalar spectral index of primordial fluctuations
+        "ln1010As",  # amplitude of the primordial power spectrum
+    ],
+)
+
+astrophysics = namedtuple(
+    "astro",
+    [
+        "epsilon",  # star formation efficiency
+        "alpha_star",  # power-law index for star formation efficiency
+        "beta_star",  # power-law index for star formation efficiency
+        "M_pivot",  # pivot mass for star formation efficiency
+    ],
 )
 
 
@@ -22,9 +40,9 @@ constants = namedtuple(
         "Msun",  # Solar mass in kg
         "Mpc",  # Megaparsec in meters
         "yr",  # Year in seconds
-        "lyman_alpha_freq", # Ly-α frequency in Hz
-        "lyman_beta_freq", # Ly-β frequency in Hz
-        "lyman_limit", # Lyman limit frequency in Hz
+        "lyman_alpha_freq",  # Ly-α frequency in Hz
+        "lyman_beta_freq",  # Ly-β frequency in Hz
+        "lyman_limit",  # Lyman limit frequency in Hz
     ],
 )
 
@@ -40,7 +58,7 @@ const = constants(
     Msun=1.989e30,  # kg
     Mpc=3.086e22,  # m
     yr=3.154e7,  # s
-    lyman_alpha_freq=2.466e15, # Hz
-    lyman_beta_freq=2.922e15, # Hz lyman_limit=3.289e15, # Hz
-    lyman_limit=3.289e15, # Hz
+    lyman_alpha_freq=2.466e15,  # Hz
+    lyman_beta_freq=2.922e15,  # Hz lyman_limit=3.289e15, # Hz
+    lyman_limit=3.289e15,  # Hz
 )

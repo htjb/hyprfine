@@ -3,24 +3,18 @@
 import jax
 import jax.numpy as jnp
 
-from hyprfine.parameters import cosmology
+from hyprfine.parameters import cosmology, astrophysics
 from hyprfine.utils.cosmology import growth_factor, rhom, sigma, sigma0
 
 
 def fstar(
-    epsilon: jnp.ndarray,
-    alpha_star: jnp.ndarray,
-    beta_star: jnp.ndarray,
-    M_pivot: jnp.ndarray,
+    astro: astrophysics,
     M_h: jnp.ndarray,
 ) -> jnp.ndarray:
     """Calculate the star formation efficiency fstar.
 
     Args:
-        epsilon: Normalization of the star formation efficiency.
-        alpha_star: Power-law index for low-mass halos.
-        beta_star: Power-law index for high-mass halos.
-        M_pivot: Turnover mass in solar masses.
+        astro: astrophysics parameters.
         M_h: Halo mass in solar masses.
 
     Returns:
@@ -28,8 +22,9 @@ def fstar(
     """
     M_turn = 3.3e7  # from zeus21 code in Msun
     f_duty = jnp.exp(-M_turn / M_h)
-    f_star = (2.0 * epsilon * f_duty) / (
-        (M_h / M_pivot) ** (-alpha_star) + (M_h / M_pivot) ** (-beta_star)
+    f_star = (2.0 * astro.epsilon * f_duty) / (
+        (M_h / astro.M_pivot) ** (-astro.alpha_star)
+        + (M_h / astro.M_pivot) ** (-astro.beta_star)
     )
     return f_star
 
@@ -57,10 +52,7 @@ def dmh_dt(M_h: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
 def dmstar_dt(
     m_h: jnp.ndarray,
     z: jnp.ndarray,
-    epsilon: jnp.ndarray,
-    alpha_star: jnp.ndarray,
-    beta_star: jnp.ndarray,
-    M_pivot: jnp.ndarray,
+    astro: astrophysics,
     cosmo: cosmology,
 ) -> jnp.ndarray:
     """Calculate the star formation rate.
@@ -68,16 +60,13 @@ def dmstar_dt(
     Args:
         m_h: Halo mass in solar masses.
         z: Redshift.
-        epsilon: Normalization of the star formation efficiency.
-        alpha_star: Power-law index for low-mass halos.
-        beta_star: Power-law index for high-mass halos.
-        M_pivot: Turnover mass in solar masses.
+        astro: astrophysics parameters.
         cosmo: cosmology parameters.
 
     Returns:
         dm_star/dt: Star formation rate in solar masses per year.
     """
-    f_star = fstar(epsilon, alpha_star, beta_star, M_pivot, m_h)
+    f_star = fstar(astro, m_h)
     f_b = cosmo.Omega_b / cosmo.Omega_m
     dm_h_dt = dmh_dt(m_h, z, cosmo)
     return f_star * f_b * dm_h_dt
@@ -112,10 +101,7 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
 def mean_sfrd(
     z: jnp.ndarray,
     Mh: jnp.ndarray,
-    epsilon: jnp.ndarray,
-    alpha_star: jnp.ndarray,
-    beta_star: jnp.ndarray,
-    M_pivot: jnp.ndarray,
+    astro: astrophysics,
     cosmo: cosmology,
 ) -> jnp.ndarray:
     """Calculate the star formation rate density (SFRD).
@@ -123,10 +109,7 @@ def mean_sfrd(
     Args:
         Mh: Halo mass in solar masses.
         z: Redshift.
-        epsilon: Normalization of the star formation efficiency.
-        alpha_star: Power-law index for low-mass halos.
-        beta_star: Power-law index for high-mass halos.
-        M_pivot: Turnover mass in solar masses.
+        astro: astrophysics parameters.
         cosmo: cosmology parameters.
 
     Returns:
@@ -134,7 +117,7 @@ def mean_sfrd(
             per cubic megaparsec.
     """
     dmstar_dt_val = dmstar_dt(
-        Mh, z, epsilon, alpha_star, beta_star, M_pivot, cosmo
+        Mh, z, astro, cosmo
     )  # in solar masses per year !need to check??
     dn_dmh_val = dn_dmh(
         Mh, cosmo, z
@@ -166,10 +149,7 @@ def sfrd(
     R: jnp.ndarray,
     Mmin: jnp.ndarray,
     Mmax: jnp.ndarray,
-    epsilon: jnp.ndarray,
-    alpha_star: jnp.ndarray,
-    beta_star: jnp.ndarray,
-    M_pivot: jnp.ndarray,
+    astro: astrophysics,
     cosmo: cosmology,
     z: jnp.ndarray,
     key: jnp.ndarray,
@@ -180,10 +160,7 @@ def sfrd(
         R: Smoothing scale in Mpc.
         Mmin: Minimum halo mass in solar masses.
         Mmax: Maximum halo mass in solar masses.
-        epsilon: Normalization of the star formation efficiency.
-        alpha_star: Power-law index for low-mass halos.
-        beta_star: Power-law index for high-mass halos.
-        M_pivot: Turnover mass in solar masses.
+        astro: astrophysics parameters.
         cosmo: cosmology parameters.
         z: Redshift.
         key: JAX random key for generating the overdensity.
@@ -197,10 +174,7 @@ def sfrd(
     mean_sfrd_val = mean_sfrd(
         z,
         10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100),
-        epsilon,
-        alpha_star,
-        beta_star,
-        M_pivot,
+        astro,
         cosmo,
     )
     gamma_r = 0.5
