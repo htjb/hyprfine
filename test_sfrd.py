@@ -2,10 +2,8 @@ import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
-from hyprfine.analytic.sfrd import dn_dmh, mean_sfrd, sfrd, fstar
-from hyprfine.utils.cosmology import growth_factor, rhom, sigma, sigma0
-from hyprfine.parameters import cosmology
-from hyprfine.matterpower import matterpowerspec
+from hyprfine.analytic.sfrd import dn_dmh, mean_sfrd, sfrd
+from hyprfine.parameters import astrophysics, cosmology
 
 cosmo = cosmology(
     H0=67.36,
@@ -17,11 +15,12 @@ cosmo = cosmology(
     ln1010As=3.044,
 )  # Example cosmology parameters
 
-epsilon = 0.1
-alpha_star = 0.5
-beta_star = -0.5
-M_pivot = 3e11
-
+astro = astrophysics(
+    epsilon=0.1,
+    alpha_star=0.5,
+    beta_star=-0.5,
+    M_pivot=3e11,
+)
 
 Mh = 10 ** jnp.linspace(8, 13, 100)
 
@@ -42,10 +41,7 @@ mean_sfrd_values = jnp.array(
         mean_sfrd(
             cosmo=cosmo,
             z=i,
-            epsilon=epsilon,
-            alpha_star=alpha_star,
-            beta_star=beta_star,
-            M_pivot=M_pivot,
+            astro=astro,
             Mh=Mh,
         )
         for i in z_values
@@ -69,10 +65,7 @@ sfrd_values = [
     sfrd(
         cosmo=cosmo,
         z=i,
-        epsilon=epsilon,
-        alpha_star=alpha_star,
-        beta_star=beta_star,
-        M_pivot=M_pivot,
+        astro=astro,
         Mmin=1e8,
         Mmax=1e13,
         R=R,
