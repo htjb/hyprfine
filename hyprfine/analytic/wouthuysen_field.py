@@ -121,6 +121,13 @@ def calculate_epsilon_alpha_intrinsic(
 def get_f_rec(n: int) -> float:
     """Recycling fractions from Pritchard & Furlanetto (2006).
 
+    As defined in 21cmFAST (https://github.com/21cmfast/21cmFAST/
+        blob/main/src/py21cmfast/src/heating_helper_progs.c#L200),
+    in Zeus21 (https://github.com/JulianBMunoz/Zeus21/
+        blob/main/zeus21/constants.py#L62)
+    and in Echo21 (https://github.com/shikharmittal04/
+        echo21/blob/master/src/echo21/const.py#L74)
+
     Args:
         n: Principal quantum number (n >= 2)
 
