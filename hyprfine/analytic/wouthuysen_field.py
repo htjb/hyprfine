@@ -121,6 +121,9 @@ def calculate_epsilon_alpha_intrinsic(
 def get_f_rec(n: int) -> float:
     """Recycling fractions from Pritchard & Furlanetto (2006).
 
+    What fraction of the non-direct decays eventually produce lyman
+    alpha vs ending up in the 2s two photon decay.
+
     As defined in 21cmFAST (https://github.com/21cmfast/21cmFAST/
         blob/main/src/py21cmfast/src/heating_helper_progs.c#L200),
     in Zeus21 (https://github.com/JulianBMunoz/Zeus21/
