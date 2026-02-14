@@ -130,11 +130,28 @@ def get_f_rec(n: int) -> float:
     f_rec_table = {
         2: 1.0,  # Ly-alpha
         3: 0.0,  # Ly-beta (usually absorbed locally)
-        4: 0.822,  # Ly-gamma
-        5: 0.795,
-        6: 0.783,
+        4: 0.2609,  # Ly-gamma
+        5: 0.3078,
+        6: 0.3259,
+        7: 0.3353,
+        8: 0.3410,
+        9: 0.3448,
+        10: 0.3476,
+        11: 0.3496,
+        12: 0.3512,
+        13: 0.3512,
+        14: 0.3535,
+        15: 0.3543,
+        16: 0.3550,
+        17: 0.3556,
+        18: 0.3561,
+        19: 0.3565,
+        20: 0.3569,
+        21: 0.3572,
+        22: 0.3575,
+        23: 0.3578
     }
-    return f_rec_table.get(n, 0.78)  # ~0.78 for n > 6
+    return f_rec_table.get(n, 0.358)  
 
 
 def get_lyman_freq(n: int) -> float:
