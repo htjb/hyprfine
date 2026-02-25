@@ -12,7 +12,7 @@ from astroemu.serialisation import load, save
 from astroemu.train import train
 from astroemu.utils import compute_mean_std
 
-files = glob.glob("hyrec-data/*.npz")[:250]
+files = glob.glob("hyrec-data/*.npz")[:2500]
 print(f"Found {len(files)} files.")
 train_files = files[: int(len(files) / 100 * 80)]
 val_files = files[int(len(files) / 100 * 80) : int(len(files) / 100 * 90)]
@@ -20,7 +20,7 @@ test_files = files[int(len(files) / 100 * 90) :]
 
 for label in ['xe', 'tk']:
     variable_input = ['H0', 'omb', 'omc', 'yhe']
-    log10 = log_base_10(log_all_y=True)
+    log10 = log_base_10(log_all_y=True, log_all_params=True)
     train_dataset = SpectrumDataset(
         files=train_files,
         x="z",
@@ -69,12 +69,12 @@ for label in ['xe', 'tk']:
     )
 
     config = {
-        "hidden_size": 16,
-        "nlayers": 4,
+        "hidden_size": 32,
+        "nlayers": 2,
         "act": "relu",
-        "epochs": 50,
+        "epochs": 1000,
         "patience": 50,
-        "learning_rate": 1e-3,
+        "learning_rate": 1e-4,
         "weight_decay": 1e-4,
     }
 
