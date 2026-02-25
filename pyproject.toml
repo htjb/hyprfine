@@ -50,6 +50,9 @@ docs = [
 where = ["."]
 include = ["hyprfine*"]
 
+[tool.setuptools.package-data]
+astroemu = ["data/*"]
+
 [tool.ruff]
 line-length = 79
 
