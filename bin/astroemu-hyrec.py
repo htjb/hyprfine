@@ -12,7 +12,7 @@ from astroemu.serialisation import load, save
 from astroemu.train import train
 from astroemu.utils import compute_mean_std
 
-files = glob.glob("hyrec-data/*.npz")[:2500]
+files = glob.glob("hyrec-data/*.npz")[:1000]
 print(f"Found {len(files)} files.")
 train_files = files[: int(len(files) / 100 * 80)]
 val_files = files[int(len(files) / 100 * 80) : int(len(files) / 100 * 90)]
