@@ -5,7 +5,7 @@
 **Homepage**: [https://github.come/htjb/hyprfine](https://github.come/htjb/hyprfine)<br>
 **License**: MIT
 
-A set of GPU accelerated simulation tools for 21-cm Cosmology.
+A **developing** set of GPU accelerated simulation tools for 21-cm Cosmology.
 
 ## Documentation
 
