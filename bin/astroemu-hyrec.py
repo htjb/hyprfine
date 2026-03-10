@@ -3,6 +3,10 @@
 import glob
 from pathlib import Path
 
+import os
+
+os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=true intra_op_parallelism_threads=8"
+
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
@@ -15,7 +19,7 @@ from astroemu.utils import compute_mean_std
 
 ROOT = Path(__file__).resolve().parent.parent
 
-files = glob.glob(str(ROOT / "hyrec-data" / "*.npz"))[:1000]
+files = glob.glob(str(ROOT / "hyrec-data" / "*.npz"))[:500]
 print(f"Found {len(files)} files.")
 train_files = files[: int(len(files) / 100 * 80)]
 val_files = files[int(len(files) / 100 * 80) : int(len(files) / 100 * 90)]
@@ -72,12 +76,12 @@ for label in ['xe', 'tk']:
     )
 
     config = {
-        "hidden_size": 32,
-        "nlayers": 4,
+        "hidden_size": 64,
+        "nlayers": 2,
         "act": "tanh",
-        "epochs": 1000,
-        "patience": 50,
-        "learning_rate": 1e-4,
+        "epochs": 500,
+        "patience": 20,
+        "learning_rate": 1e-3,
         "weight_decay": 1e-4,
     }
 
@@ -90,6 +94,9 @@ for label in ['xe', 'tk']:
 
     plt.plot(train_losses, label="Train Loss")
     plt.plot(val_losses, label="Val Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("MSE Loss")
+    plt.legend()
     plt.savefig(ROOT / "docs" / "hyrec-emulators" / f"hyrec_training_curve_{label}.png")
     plt.close()
 
@@ -126,8 +133,32 @@ for label in ['xe', 'tk']:
     true_values = jnp.vstack(true_values)
     print(predictions.shape, true_values.shape)
 
+    ylabels = {'xe': '$x_e$', 'tk': '$T_k$ [K]'}
     [plt.plot(x, predictions[i, :], c='r', ls='--') for i in range(10)]
     [plt.plot(x, true_values[i, :], c='k', ls='-') for i in range(10)]
     plt.loglog()
+    plt.xlabel('Redshift $z$')
+    plt.ylabel(ylabels[label])
     plt.savefig(ROOT / "docs" / "hyrec-emulators" / f"hyrec_predictions_{label}.png")
+    plt.close()
+
+    # percentage error across all test samples as a function of z
+    percent_err = jnp.abs(
+        (predictions - true_values) / true_values
+    ) * 100
+    median_err = jnp.median(percent_err, axis=0)
+    upper = jnp.percentile(percent_err, 84, axis=0)
+    lower = jnp.percentile(percent_err, 16, axis=0)
+
+    plt.plot(x, median_err, c='k')
+    plt.fill_between(
+        x, lower, upper, alpha=0.3, color='k', label='16th–84th percentile'
+    )
+    plt.xlabel('Redshift $z$')
+    plt.ylabel(f'Percentage error in {ylabels[label]} [%]')
+    plt.xscale('log')
+    plt.legend()
+    plt.savefig(
+        ROOT / "docs" / "hyrec-emulators" / f"hyrec_percent_error_{label}.png"
+    )
     plt.close()
