@@ -27,7 +27,7 @@ test_files = files[int(len(files) / 100 * 90) :]
 
 for label in ['xe', 'tk']:
     variable_input = ['H0', 'omb', 'omc', 'yhe']
-    log10 = log_base_10(log_all_y=True, log_all_params=True)
+    log10 = log_base_10(log_all_y=True, log_all_x=True)
     train_dataset = SpectrumDataset(
         files=train_files,
         x="z",
@@ -82,14 +82,14 @@ for label in ['xe', 'tk']:
         "epochs": 500,
         "patience": 20,
         "learning_rate": 1e-3,
-        "weight_decay": 1e-4,
+        "weight_decay": 1e-5,
     }
 
     best_params, train_losses, val_losses = train(
         train_dataset=train_dataset,
         val_dataset=val_dataset,
         **config,
-        batch_size=512
+        batch_size=3200,
     )
 
     plt.plot(train_losses, label="Train Loss")
@@ -116,7 +116,7 @@ for label in ['xe', 'tk']:
 
     predictions = []
     true_values = []
-    for batch in test_dataset.get_batch_iterator(batch_size=32, shuffle=False):
+    for batch in test_dataset.get_batch_iterator(batch_size=3200, shuffle=False):
         y, params = batch
         preds = mlp(loaded["params"], params, act=loaded["hyperparams"]["act"])
         # reshape from tiled (batch*len_x,) to (batch, len_x) before the
