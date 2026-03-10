@@ -16,7 +16,7 @@ dependencies = [
     "jax",
     "jaxlib",
     "numpy",
-    
+    "astroemu", 
 ]
 
 classifiers=[
