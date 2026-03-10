@@ -1,6 +1,7 @@
-"""Tinkering."""
+"""Train HYREC emulators for xe and Tk."""
 
 import glob
+from pathlib import Path
 
 import jax
 import jax.numpy as jnp
@@ -12,7 +13,9 @@ from astroemu.serialisation import load, save
 from astroemu.train import train
 from astroemu.utils import compute_mean_std
 
-files = glob.glob("hyrec-data/*.npz")[:1000]
+ROOT = Path(__file__).resolve().parent.parent
+
+files = glob.glob(str(ROOT / "hyrec-data" / "*.npz"))[:1000]
 print(f"Found {len(files)} files.")
 train_files = files[: int(len(files) / 100 * 80)]
 val_files = files[int(len(files) / 100 * 80) : int(len(files) / 100 * 90)]
@@ -87,11 +90,11 @@ for label in ['xe', 'tk']:
 
     plt.plot(train_losses, label="Train Loss")
     plt.plot(val_losses, label="Val Loss")
-    plt.savefig(f"docs/hyrec-emulators/hyrec_training_curve_{label}.png")
+    plt.savefig(ROOT / "docs" / "hyrec-emulators" / f"hyrec_training_curve_{label}.png")
     plt.close()
 
     save(
-        f"hyprfine/data/hyrec_{label}.astroemu",
+        str(ROOT / "hyprfine" / "data" / f"hyrec_{label}.astroemu"),
         best_params,
         train_losses,
         val_losses,
@@ -102,7 +105,7 @@ for label in ['xe', 'tk']:
         test_dataset=test_dataset,
     )
 
-    loaded = load(f"hyprfine/data/hyrec_{label}.astroemu")
+    loaded = load(str(ROOT / "hyprfine" / "data" / f"hyrec_{label}.astroemu"))
 
     predictions = []
     true_values = []
@@ -126,5 +129,5 @@ for label in ['xe', 'tk']:
     [plt.plot(x, predictions[i, :], c='r', ls='--') for i in range(10)]
     [plt.plot(x, true_values[i, :], c='k', ls='-') for i in range(10)]
     plt.loglog()
-    plt.savefig(f"docs/hyrec-emulators/hyrec_predictions_{label}.png")
+    plt.savefig(ROOT / "docs" / "hyrec-emulators" / f"hyrec_predictions_{label}.png")
     plt.close()
