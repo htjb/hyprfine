@@ -70,8 +70,8 @@ for label in ['xe', 'tk']:
 
     config = {
         "hidden_size": 32,
-        "nlayers": 2,
-        "act": "relu",
+        "nlayers": 4,
+        "act": "tanh",
         "epochs": 1000,
         "patience": 50,
         "learning_rate": 1e-4,
@@ -109,13 +109,15 @@ for label in ['xe', 'tk']:
     for batch in test_dataset.get_batch_iterator(batch_size=32, shuffle=False):
         y, params = batch
         preds = mlp(loaded["params"], params, act=loaded["hyperparams"]["act"])
-        # apply the backward pass on the normalisation pipelines
+        # reshape from tiled (batch*len_x,) to (batch, len_x) before the
+        # backward pass so per-frequency statistics broadcast correctly
+        preds = preds.reshape(-1, len(x))
+        y = y.reshape(-1, len(x))
         for pipe in reversed(test_dataset.forward_pipeline):
             preds, _, _ = pipe.backward(preds, x, params)
             y, _, _ = pipe.backward(y, x, params)
-        preds = preds.reshape(-1, len(x))
         predictions.append(preds)
-        true_values.append(y.reshape(-1, len(x)))
+        true_values.append(y)
 
     predictions = jnp.vstack(predictions)
     true_values = jnp.vstack(true_values)
