@@ -10,8 +10,6 @@ cosmology = namedtuple(
         "Omega_b",  # Baryon density parameter
         "Omega_c",  # Cold dark matter density parameter
         "Y_He",  # Helium mass fraction
-        "ns",  # scalar spectral index of primordial fluctuations
-        "ln1010As",  # amplitude of the primordial power spectrum
     ],
 )
 
