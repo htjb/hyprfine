@@ -98,18 +98,19 @@ ax_sig.set_xscale("log")
 # Bar chart
 labels = list(results.keys())
 times = list(results.values())
-colours = [
-    "steelblue" if "CPU" in l else "darkorange" for l in labels
-]
-hatches = ["" if "warm" in l.lower() else "///" for l in labels]
-bars = ax_bar.bar(labels, times, color=colours, hatch=hatches,
-                  edgecolor="white")
+colours = ["steelblue" if "CPU" in ll else "darkorange" for ll in labels]
+hatches = ["" if "warm" in ll.lower() else "///" for ll in labels]
+bars = ax_bar.bar(
+    labels, times, color=colours, hatch=hatches, edgecolor="white"
+)
 for bar, t in zip(bars, times):
     ax_bar.text(
         bar.get_x() + bar.get_width() / 2,
         bar.get_height() * 1.01,
         f"{t:.3f} s",
-        ha="center", va="bottom", fontsize=9,
+        ha="center",
+        va="bottom",
+        fontsize=9,
     )
 ax_bar.set_ylabel("Wall time [s]")
 ax_bar.set_title("Signal generation benchmark")
