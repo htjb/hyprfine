@@ -21,11 +21,11 @@ from astroemu.utils import compute_mean_std
 
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from normalisation import focus_on, downsample
+from hyprfine.recombination.normalisation import focus_on, downsample
 
 ROOT = Path(__file__).resolve().parent.parent
 
-_all_files = glob.glob(str(ROOT / "hyrec-data" / "*.npz"))[:1000]
+_all_files = glob.glob(str(ROOT / "hyrec-data" / "*.npz"))[:5000]
 print(f"Found {len(_all_files)} files.")
 
 # Determine the most common spectrum shape and drop malformed files.
@@ -46,13 +46,6 @@ print(
 train_files = files[: int(len(files) / 100 * 80)]
 val_files = files[int(len(files) / 100 * 80) : int(len(files) / 100 * 90)]
 test_files = files[int(len(files) / 100 * 90) :]
-
-# Load a Planck-like fiducial spectrum for the residual subtraction.
-# Uses the first training file as a reference — swap for a file with
-# exactly Planck parameters if one is available.
-_planck_file = np.load(train_files[0], allow_pickle=True)
-_z_planck = _planck_file["z"]
-_xe_planck = _planck_file["xe"]
 
 for label in ['xe', 'tk']:
     variable_input = ['H0', 'omb', 'omc', 'yhe']
@@ -130,10 +123,10 @@ for label in ['xe', 'tk']:
 
     config = {
         "hidden_size": 32,
-        "nlayers": 2,
+        "nlayers": 4,
         "act": "gelu",
-        "epochs": 100,
-        "patience": 10,
+        "epochs": 1000,
+        "patience": 20,
         "learning_rate": 1e-3,
         "weight_decay": 1e-5,
     }
