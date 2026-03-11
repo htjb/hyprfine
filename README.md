@@ -7,7 +7,7 @@
 
 GPU-accelerated simulation tools for the cosmological 21-cm signal, built on [JAX](https://github.com/google/jax). hyprfine replaces slow C-code recombination solvers with neural network emulators, enabling fast, differentiable signal generation suitable for inference pipelines.
 
-![Benchmark](https://github.com/htjb/hyprfine/main/bin/benchmark.png)
+![Benchmark](https://github.com/htjb/hyprfine/blob/main/bin/benchmark.png)
 
 *Dark ages 21-cm signal computed with Planck 2018 parameters (left) and wall-clock timing on CPU (right). The warm (post-JIT) evaluation takes ~2 ms.*
 
