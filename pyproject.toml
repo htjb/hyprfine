@@ -16,7 +16,7 @@ dependencies = [
     "jax",
     "jaxlib",
     "numpy",
-    
+    "astroemu", 
 ]
 
 classifiers=[
@@ -49,6 +49,9 @@ docs = [
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["hyprfine*"]
+
+[tool.setuptools.package-data]
+astroemu = ["data/*"]
 
 [tool.ruff]
 line-length = 79

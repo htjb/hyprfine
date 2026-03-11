@@ -7,7 +7,7 @@ from hyprfine.analytic.coupling_coeffs import xc
 from hyprfine.analytic.signal import T21
 from hyprfine.analytic.temperatures import Tcmb, Ts
 from hyprfine.parameters import cosmology
-from hyprfine.recombination.hyrec import call_hyrec, set_up_hyrec
+from hyprfine.recombination.emulator import call_hyrec_emulator
 
 xcvmap = jax.vmap(xc, in_axes=(0, 0, 0, None))
 vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, 0, None))
@@ -16,9 +16,7 @@ vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, 0, None))
 def generate_signal(
     f_grid: jnp.ndarray,
     cosmo: cosmology,
-    z_init: int,
     detailed_output: bool = False,
-    verbose: bool = False,
 ) -> jnp.ndarray | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Generate 21cm signal for a given cosmological sample.
 
@@ -26,25 +24,20 @@ def generate_signal(
         f_grid: Frequency grid in MHz.
         cosmo: Cosmological parameters [H0, Omega_m, Omega_b, Omega_c,
                 Y_He].
-        z_init: Initial redshift.
         detailed_output: Whether to return detailed outputs (xe, Tk, xc).
-        verbose: Whether to print verbose output from the recombination codes.
 
     Returns:
         T21_values: 21cm brightness temperature values over the frequency grid.
     """
     try:
-        set_up_hyrec(
+        z_grid = 1420.4 / (f_grid) - 1
+        xe, T_gas = call_hyrec_emulator(
+            z_grid=z_grid,
             H0=cosmo.H0,
             omb=cosmo.Omega_b,
             omc=cosmo.Omega_c,
-            omk=0.0,
             yhe=cosmo.Y_He,
-            base_dir="./",
         )
-        z_grid = 1420.4 / (f_grid) - 1
-        xe, T_gas = call_hyrec(base_dir="./", redshift=z_grid, verbose=verbose)
-        xe, T_gas = jnp.array(xe), jnp.array(T_gas)
 
         xc_values = xcvmap(z_grid, xe, T_gas, cosmo)
 
