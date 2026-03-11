@@ -4,7 +4,10 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
-import pytest
+import jax  # noqa: E402
+import pytest  # noqa: E402
+
+jax.config.update("jax_enable_x64", True)
 
 from hyprfine.parameters import cosmology
 
