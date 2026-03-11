@@ -20,7 +20,7 @@ from astroemu.train import train
 from astroemu.utils import compute_mean_std
 
 import sys
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from hyprfine.recombination.normalisation import focus_on, downsample
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -135,7 +135,7 @@ for label in ['xe', 'tk']:
         train_dataset=train_dataset,
         val_dataset=val_dataset,
         **config,
-        batch_size=5120,
+        batch_size=128,
     )
 
     plt.plot(train_losses, label="Train Loss")
