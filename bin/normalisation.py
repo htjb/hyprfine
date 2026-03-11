@@ -2,7 +2,6 @@
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 from astroemu.normalisation import NormalisationPipeline
 
 
@@ -33,10 +32,10 @@ class focus_on_recombination(NormalisationPipeline):
         n_background: int = 2000,
         n_focus: int = 1500,
     ) -> None:
-        z_bg = np.linspace(z_min, z_max, n_background)
-        z_fg = np.linspace(z_focus_lo, z_focus_hi, n_focus)
+        z_bg = jnp.linspace(z_min, z_max, n_background)
+        z_fg = jnp.linspace(z_focus_lo, z_focus_hi, n_focus)
         self._new_grid = jnp.array(
-            np.unique(np.concatenate([z_bg, z_fg]))
+            jnp.unique(jnp.concatenate([z_bg, z_fg]))
         )
 
     def forward(
@@ -95,7 +94,7 @@ class downsample(NormalisationPipeline):
         z_max: float = 8000.0,
         n: int = 2000,
     ) -> None:
-        self.z_down = np.linspace(z_min, z_max, n)
+        self.z_down = jnp.linspace(z_min, z_max, n)
 
     def forward(
         self,
