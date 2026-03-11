@@ -61,25 +61,23 @@ def call_hyrec_emulator(
         # Add batch dim so grid-redistribution pipeline steps (which expect
         # shape (batch, len_x)) work correctly during inference.
         x = z_grid_orig[None, :]  # (1, len_z)
-        params = jnp.array(
-            [H0, omb, omc, yhe], dtype=jnp.float32
-        )[None, :]   # (1, 4)
+        params = jnp.array([H0, omb, omc, yhe], dtype=jnp.float32)[
+            None, :
+        ]  # (1, 4)
         y_dummy = jnp.ones_like(x)
 
         for pipe in pipeline:
             y_dummy, x, params = pipe.forward(y_dummy, x, params)
 
         # x is now (1, n_training_grid) — flatten for MLP input.
-        x_flat = x[0]       # (n_training,)
+        x_flat = x[0]  # (n_training,)
         params_flat = params[0]  # (4,)
 
         # Build tiled input: each row is [z_norm_i, param0_norm, ...]
         tiled = jnp.column_stack(
             [x_flat, jnp.tile(params_flat, (len(x_flat), 1))]
         )
-        preds = mlp(
-            loaded["params"], tiled, act=loaded["hyperparams"]["act"]
-        )
+        preds = mlp(loaded["params"], tiled, act=loaded["hyperparams"]["act"])
 
         # Backward pass to recover physical units on the training grid.
         preds = preds.reshape(1, -1)

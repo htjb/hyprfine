@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jnp
 from astroemu.normalisation import NormalisationPipeline
 
+
 class focus_on(NormalisationPipeline):
     """Redistribute the redshift grid.
 
@@ -30,11 +31,10 @@ class focus_on(NormalisationPipeline):
         n_background: int = 2000,
         n_focus: int = 1500,
     ) -> None:
+        """Create the new redshift grid."""
         z_bg = jnp.linspace(z_min, z_max, n_background)
         z_fg = jnp.linspace(z_focus_lo, z_focus_hi, n_focus)
-        self._new_grid = jnp.array(
-            jnp.unique(jnp.concatenate([z_bg, z_fg]))
-        )
+        self._new_grid = jnp.array(jnp.unique(jnp.concatenate([z_bg, z_fg])))
 
     def forward(
         self,
@@ -53,9 +53,7 @@ class focus_on(NormalisationPipeline):
             y interpolated onto focused grid, tiled focused x, params.
         """
         x_row = x[0]
-        y_new = jax.vmap(
-            lambda yi: jnp.interp(self._new_grid, x_row, yi)
-        )(y)
+        y_new = jax.vmap(lambda yi: jnp.interp(self._new_grid, x_row, yi))(y)
         x_new = jnp.tile(self._new_grid, (x.shape[0], 1))
         return y_new, x_new, params
 
@@ -77,6 +75,7 @@ class focus_on(NormalisationPipeline):
         """
         return y, x, params
 
+
 class downsample(NormalisationPipeline):
     """Downsample the grid.
 
@@ -92,6 +91,7 @@ class downsample(NormalisationPipeline):
         z_max: float = 8000.0,
         n: int = 2000,
     ) -> None:
+        """Create the new redshift grid."""
         self.z_down = jnp.linspace(z_min, z_max, n)
 
     def forward(
@@ -111,9 +111,7 @@ class downsample(NormalisationPipeline):
             y interpolated onto downsampled grid, tiled downsampled x, params.
         """
         x_row = x[0]
-        y_new = jax.vmap(
-            lambda yi: jnp.interp(self.z_down, x_row, yi)
-        )(y)
+        y_new = jax.vmap(lambda yi: jnp.interp(self.z_down, x_row, yi))(y)
         x_new = jnp.tile(self.z_down, (x.shape[0], 1))
         return y_new, x_new, params
 
