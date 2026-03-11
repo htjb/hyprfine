@@ -1,6 +1,10 @@
 """Benchmark hyprfine signal generation on CPU (and CUDA GPU if available)."""
 
+import sys
 import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import jax
 import jax.numpy as jnp
@@ -111,5 +115,5 @@ ax_bar.set_ylabel("Wall time [s]")
 ax_bar.set_title("Signal generation benchmark")
 ax_bar.tick_params(axis="x", rotation=15)
 
-plt.savefig("benchmark.png", dpi=150)
+plt.savefig("bin/benchmark.png", dpi=150)
 print("Saved benchmark.png")
