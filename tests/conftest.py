@@ -10,7 +10,7 @@ from hyprfine.parameters import cosmology
 
 
 @pytest.fixture
-def cosmo():
+def cosmo() -> cosmology:
     """Planck 2018 cosmology."""
     return cosmology(
         H0=67.32,
