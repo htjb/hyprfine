@@ -25,7 +25,7 @@ from normalisation import focus_on_recombination, downsample
 
 ROOT = Path(__file__).resolve().parent.parent
 
-_all_files = glob.glob(str(ROOT / "hyrec-data" / "*.npz"))[:1000]
+_all_files = glob.glob(str(ROOT / "hyrec-data" / "*.npz"))[:100]
 print(f"Found {len(_all_files)} files.")
 
 # Determine the most common spectrum shape and drop malformed files.
@@ -64,7 +64,13 @@ for label in ['xe', 'tk']:
         forward_pipeline=[focus, log10],
     )
 
-    _, x, _ = train_dataset[0]
+    # Get x after the pipeline has been applied (pipeline runs inside
+    # get_batch_iterator, not in __getitem__, so train_dataset[0] returns
+    # the raw 8000-point grid).
+    _, x, _ = next(iter(
+        train_dataset.get_batch_iterator(batch_size=1, shuffle=False)
+    ))
+    x = x[0]  # shape (n_focused,)
 
     mean_spec, std_spec, mean_x, std_x, mean_params, std_params = (
         compute_mean_std(
