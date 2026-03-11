@@ -4,13 +4,11 @@ import jax
 import jax.numpy as jnp
 from astroemu.normalisation import NormalisationPipeline
 
-
-class focus_on_recombination(NormalisationPipeline):
-    """Redistribute the redshift grid to concentrate sampling near z~1100.
+class focus_on(NormalisationPipeline):
+    """Redistribute the redshift grid.
 
     Interpolates spectra from the data's uniform z grid to a new grid
-    with higher density around the hydrogen recombination transition,
-    where xe changes by several orders of magnitude over a narrow range.
+    with higher density between z_focus_lo and z_focus_hi.
 
     Args:
         z_min: Minimum redshift of the data grid.

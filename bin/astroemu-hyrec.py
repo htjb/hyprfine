@@ -21,11 +21,11 @@ from astroemu.utils import compute_mean_std
 
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from normalisation import focus_on_recombination, downsample
+from normalisation import focus_on, downsample
 
 ROOT = Path(__file__).resolve().parent.parent
 
-_all_files = glob.glob(str(ROOT / "hyrec-data" / "*.npz"))[:100]
+_all_files = glob.glob(str(ROOT / "hyrec-data" / "*.npz"))[:1000]
 print(f"Found {len(_all_files)} files.")
 
 # Determine the most common spectrum shape and drop malformed files.
@@ -47,13 +47,26 @@ train_files = files[: int(len(files) / 100 * 80)]
 val_files = files[int(len(files) / 100 * 80) : int(len(files) / 100 * 90)]
 test_files = files[int(len(files) / 100 * 90) :]
 
+# Load a Planck-like fiducial spectrum for the residual subtraction.
+# Uses the first training file as a reference — swap for a file with
+# exactly Planck parameters if one is available.
+_planck_file = np.load(train_files[0], allow_pickle=True)
+_z_planck = _planck_file["z"]
+_xe_planck = _planck_file["xe"]
+
 for label in ['xe', 'tk']:
     variable_input = ['H0', 'omb', 'omc', 'yhe']
     if label == 'tk':
-        focus = downsample()
+        focus = downsample(n=1000)
+        log10 = log_base_10(log_all_y=True, log_all_x=True)
+        pipeline = [focus, log10]
     else:
-        focus = focus_on_recombination()
-    log10 = log_base_10(log_all_y=True, log_all_x=True)
+        focus = focus_on(n_background=1000,
+                                       n_focus=1000,
+                                       z_focus_lo=1, z_focus_hi=500)
+        #focus = downsample(n=1000)
+        log10 = log_base_10(log_all_y=True, log_all_x=True)
+        pipeline = [focus, log10]
     train_dataset = SpectrumDataset(
         files=train_files,
         x="z",
@@ -61,7 +74,7 @@ for label in ['xe', 'tk']:
         variable_input=variable_input,
         tiling=False,
         allow_pickle=True,
-        forward_pipeline=[focus, log10],
+        forward_pipeline=pipeline,
     )
 
     # Get x after the pipeline has been applied (pipeline runs inside
@@ -70,7 +83,7 @@ for label in ['xe', 'tk']:
     _, x, _ = next(iter(
         train_dataset.get_batch_iterator(batch_size=1, shuffle=False)
     ))
-    x = x[0]  # shape (n_focused,)
+    x = 10 ** x[0]  # shape (n_focused,), convert log10(z) -> z
 
     mean_spec, std_spec, mean_x, std_x, mean_params, std_params = (
         compute_mean_std(
@@ -87,10 +100,14 @@ for label in ['xe', 'tk']:
         x_std=std_x,
         params_mean=mean_params,
         params_std=std_params,
+        standardise_x=True,
+        standardise_params=True,
+        standardise_y=True,
     )
 
+    full_pipeline = pipeline + [standard]
     train_dataset.tiling = True
-    train_dataset.forward_pipeline = [focus, log10, standard]
+    train_dataset.forward_pipeline = full_pipeline
 
     val_dataset = SpectrumDataset(
         files=val_files,
@@ -99,7 +116,7 @@ for label in ['xe', 'tk']:
         variable_input=variable_input,
         tiling=True,
         allow_pickle=True,
-        forward_pipeline=[focus, log10, standard],
+        forward_pipeline=full_pipeline,
     )
     test_dataset = SpectrumDataset(
         files=test_files,
@@ -108,15 +125,15 @@ for label in ['xe', 'tk']:
         variable_input=variable_input,
         tiling=True,
         allow_pickle=True,
-        forward_pipeline=[focus, log10, standard],
+        forward_pipeline=full_pipeline,
     )
 
     config = {
-        "hidden_size": 64,
+        "hidden_size": 32,
         "nlayers": 2,
-        "act": "tanh",
-        "epochs": 500,
-        "patience": 20,
+        "act": "gelu",
+        "epochs": 100,
+        "patience": 10,
         "learning_rate": 1e-3,
         "weight_decay": 1e-5,
     }
@@ -158,6 +175,7 @@ for label in ['xe', 'tk']:
         # reshape from tiled (batch*len_x,) to (batch, len_x) before the
         # backward pass so per-frequency statistics broadcast correctly
         preds = preds.reshape(-1, len(x))
+        params = params[:, 1:]
         y = y.reshape(-1, len(x))
         for pipe in reversed(test_dataset.forward_pipeline):
             preds, _, _ = pipe.backward(preds, x, params)
