@@ -15,8 +15,8 @@ evaluation, negating the performance benefits of GPU acceleration and
 preventing end-to-end differentiation through the signal model.
 
 We replace HYREC-2 with a pair of small neural network emulators — one for
-xe(z) and one for Tk(z) — trained on a grid of HYREC-2 outputs spanning the
-cosmological parameter space. The emulators are pure JAX, run natively on
+xe(z) and one for Tk(z) — trained on a grid of HYREC-2 outputs (roughly 5000 models)
+spanning the cosmological parameter space. The emulators are pure JAX, run natively on
 GPU, and are fully differentiable, enabling gradient-based inference through
 the complete signal pipeline.
 
