@@ -115,8 +115,9 @@ for bar, t in zip(bars, times):
     )
 ax_bar.set_ylabel("Wall time [s]")
 if gpus:
-    ax_bar.set_title('Signal generation benchmark\n' + 
-                    '(' + gpu.device_kind + ')')
+    ax_bar.set_title(
+        "Signal generation benchmark\n" + "(" + gpu.device_kind + ")"
+    )
 else:
     ax_bar.set_title("Signal generation benchmark")
 ax_bar.tick_params(axis="x", rotation=15)
