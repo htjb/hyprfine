@@ -1,7 +1,7 @@
 # hyprfine
 
 **Authors:** Harry T. J. Bevins <br>
-**Version**: 0.1.0 <br>
+**Version**: 0.1.1 <br>
 **Homepage**: [https://github.com/htjb/hyprfine](https://github.com/htjb/hyprfine)<br>
 **License**: MIT
 
@@ -9,7 +9,7 @@ GPU-accelerated simulation tools for the cosmological 21-cm signal, built on [JA
 
 ![Benchmark](https://github.com/htjb/hyprfine/blob/main/bin/benchmark.png)
 
-*Dark ages 21-cm signal computed with Planck 2018 parameters (left) and wall-clock timing on CPU (right). The warm (post-JIT) evaluation takes ~2 ms.*
+*Dark ages 21-cm signal computed with Planck 2018 parameters (left) and wall-clock timing on CPU and GPU (right).*
 
 ## Installation
 

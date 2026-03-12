@@ -97,6 +97,7 @@ ax_sig.set_xscale("log")
 
 # Bar chart
 labels = list(results.keys())
+print(labels)
 times = list(results.values())
 colours = ["steelblue" if "CPU" in ll else "darkorange" for ll in labels]
 hatches = ["" if "warm" in ll.lower() else "///" for ll in labels]
@@ -113,7 +114,12 @@ for bar, t in zip(bars, times):
         fontsize=9,
     )
 ax_bar.set_ylabel("Wall time [s]")
-ax_bar.set_title("Signal generation benchmark")
+if gpus:
+    ax_bar.set_title(
+        "Signal generation benchmark\n" + "(" + gpu.device_kind + ")"
+    )
+else:
+    ax_bar.set_title("Signal generation benchmark")
 ax_bar.tick_params(axis="x", rotation=15)
 
 plt.savefig("bin/benchmark.png", dpi=150)
