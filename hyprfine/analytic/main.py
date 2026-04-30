@@ -16,6 +16,7 @@ vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, 0, None))
 def generate_signal(
     f_grid: jnp.ndarray,
     cosmo: cosmology,
+    z_init: int,
     detailed_output: bool = False,
 ) -> jnp.ndarray | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Generate 21cm signal for a given cosmological sample.
@@ -24,6 +25,7 @@ def generate_signal(
         f_grid: Frequency grid in MHz.
         cosmo: Cosmological parameters [H0, Omega_m, Omega_b, Omega_c,
                 Y_He].
+        z_init: Initial redshift.
         detailed_output: Whether to return detailed outputs (xe, Tk, xc).
 
     Returns:

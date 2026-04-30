@@ -4,7 +4,7 @@ import jax
 from jax import numpy as jnp
 
 from hyprfine.parameters import const, cosmology
-from hyprfine.utils.cosmology import n_H_tot
+from hyprfine.utils.comsology import n_H_tot
 
 
 @jax.jit
