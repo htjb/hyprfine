@@ -6,6 +6,39 @@ import jax.numpy as jnp
 from hyprfine.parameters import astrophysics, const, cosmology
 from hyprfine.analytic.sfrd import mean_sfrd
 
+vmapped_mean_sfrd = jax.vmap(mean_sfrd, in_axes=(0, None, None, None))
+# Build once at module level
+_F_REC_VALUES = jnp.array([
+    1.0,     # n=2
+    0.0,     # n=3
+    0.2609,  # n=4
+    0.3078,  # n=5
+    0.3259,  # n=6
+    0.3353,  # n=7
+    0.3410,  # n=8
+    0.3448,  # n=9
+    0.3476,  # n=10
+    0.3496,  # n=11
+    0.3512,  # n=12
+    0.3512,  # n=13
+    0.3535,  # n=14
+    0.3543,  # n=15
+    0.3550,  # n=16
+    0.3556,  # n=17
+    0.3561,  # n=18
+    0.3565,  # n=19
+    0.3569,  # n=20
+    0.3572,  # n=21
+    0.3575,  # n=22
+    0.3578,  # n=23
+])
+_F_REC_DEFAULT = 0.358
+_F_REC_N_MIN = 2
+
+# At module level, alongside _F_REC_VALUES
+_NU_GRID = 10 ** jnp.arange(
+    jnp.log10(const.lyman_alpha_freq), jnp.log10(const.lyman_limit), 0.001
+)
 
 def J_alpha(
     z: float,
@@ -55,9 +88,7 @@ def J_alpha(
     Mh = 10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100)
 
     # SFRD and epsilon at each shell
-    sfrd_R = jax.vmap(lambda zp: mean_sfrd(zp, Mh, astro, cosmo))(
-        z_prime
-    )  # (N_shells,)
+    sfrd_R = vmapped_mean_sfrd(z_prime, Mh, astro, cosmo)
     eps_R = jnp.array(
         [calculate_epsilon_alpha_tot(z_source=zp, z_21=z) for zp in z_prime]
     )  # (N_shells, N_freq)
@@ -65,9 +96,7 @@ def J_alpha(
     integrand = sfrd_R[:, None] * eps_R
 
     # same frequency grid as epsilon_alpha_tot
-    nu = 10 ** jnp.arange(
-        jnp.log10(const.lyman_alpha_freq), jnp.log10(const.lyman_limit), 0.001
-    )
+    nu = _NU_GRID
 
     # Unit conversions
     Mpc_to_cm = 3.086e24        # cm per Mpc
@@ -111,9 +140,7 @@ def calculate_epsilon_alpha_tot(
     Returns:
         Total effective emissivity
     """
-    nu = 10 ** jnp.arange(
-        jnp.log10(const.lyman_alpha_freq), jnp.log10(const.lyman_limit), 0.001
-    )
+    nu = _NU_GRID
 
     nu_prime = nu * (1 + z_source) / (1 + z_21)
     # Get intrinsic spectrum (unnormalized)
@@ -121,26 +148,15 @@ def calculate_epsilon_alpha_tot(
         nu_prime, **sed_kwargs
     )
 
-    # Sum contributions from all Lyman transitions with recycling
-    epsilon_tot = 0.0
+    ns = jnp.arange(2, n_max + 1)  # shape (n_max - 1,)
 
-    for n in range(2, n_max + 1):
-        f_rec_n = get_f_rec(n)
+    f_rec_n = jax.vmap(get_f_rec)(ns)  # only if get_f_rec is JAX-compatible
+    z_max_n = (1 + z_source) * (1 - (1 + ns) ** (-2.0)) / (1 - ns ** (-2.0)) - 1
+    w_alpha_n = jnp.where(z_source < z_max_n, 1.0, 0.0)
 
-        # w_alpha(n) is the "window function" - determines if this transition
-        # can contribute at frequency nu_prime
-        # It's 1 if nu_n can redshift to nu_prime
-        # (i.e., if we're past z_max(n))
-        # and 0 otherwise
+    weight = jnp.sum(f_rec_n * w_alpha_n)  # (22,) -> scalar
 
-        # Maximum redshift where nu_n redshifts to Ly-alpha
-        z_max_n = (1 + z_source) * (1 - (1 + n) ** (-2)) / (1 - n ** (-2)) - 1
-
-        # Window: contributes if z < z_max(n)
-        # (photons from this transition have redshifted into range)
-        w_alpha_n = jnp.where(z_source < z_max_n, 1.0, 0.0)
-
-        epsilon_tot += f_rec_n * w_alpha_n * epsilon_intrinsic 
+    epsilon_tot = weight * epsilon_intrinsic
 
     return jnp.where(z_source < z_21, jnp.zeros_like(nu), epsilon_tot)
 
@@ -240,31 +256,10 @@ def get_f_rec(n: int) -> float:
     Returns:
         Probability that cascade from level n produces Ly-alpha
     """
-    f_rec_table = {
-        2: 1.0,  # Ly-alpha
-        3: 0.0,  # Ly-beta (usually absorbed locally)
-        4: 0.2609,  # Ly-gamma
-        5: 0.3078,
-        6: 0.3259,
-        7: 0.3353,
-        8: 0.3410,
-        9: 0.3448,
-        10: 0.3476,
-        11: 0.3496,
-        12: 0.3512,
-        13: 0.3512,
-        14: 0.3535,
-        15: 0.3543,
-        16: 0.3550,
-        17: 0.3556,
-        18: 0.3561,
-        19: 0.3565,
-        20: 0.3569,
-        21: 0.3572,
-        22: 0.3575,
-        23: 0.3578,
-    }
-    return f_rec_table.get(n, 0.358)
+    idx = n - _F_REC_N_MIN
+    in_table = (idx >= 0) & (idx < len(_F_REC_VALUES))
+    safe_idx = jnp.clip(idx, 0, len(_F_REC_VALUES) - 1)
+    return jnp.where(in_table, _F_REC_VALUES[safe_idx], _F_REC_DEFAULT)
 
 
 def get_lyman_freq(n: int) -> float:
