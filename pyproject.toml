@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hyprfine"
-version = "0.1.0"
+version = "0.1.1"
 description = "hyprfine: Simulation tools for 21cm Cosmology."
 readme = "README.md"
 authors = [
     {name = "Harry T. J. Bevins", email = "htjb2@cam.ac.uk"}]
 license = {text = "MIT"}
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "cosmopower_jax",
     "jax",
