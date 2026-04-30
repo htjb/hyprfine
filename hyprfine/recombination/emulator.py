@@ -52,33 +52,43 @@ def call_hyrec_emulator(
         xe: Free electron fraction at each redshift in z_grid.
         Tk: Gas temperature in Kelvin at each redshift in z_grid.
     """
+    z_grid_orig = jnp.asarray(z_grid, dtype=jnp.float32)
     results = []
     for label in ("xe", "tk"):
         loaded = _load_emulator(label)
         pipeline = loaded["train_pipeline"]
 
-        # Walk the forward pipeline to get normalised x and params.
-        # y_dummy is required by the pipeline interface but is not used.
-        x = jnp.asarray(z_grid, dtype=jnp.float32)
-        params = jnp.array([H0, omb, omc, yhe], dtype=jnp.float32)
+        # Add batch dim so grid-redistribution pipeline steps (which expect
+        # shape (batch, len_x)) work correctly during inference.
+        x = z_grid_orig[None, :]  # (1, len_z)
+        params = jnp.array([H0, omb, omc, yhe], dtype=jnp.float32)[
+            None, :
+        ]  # (1, 4)
         y_dummy = jnp.ones_like(x)
+
         for pipe in pipeline:
             y_dummy, x, params = pipe.forward(y_dummy, x, params)
 
-        # Build tiled input matching the training format:
-        # each row is [normalised_z_i, normalised_H0, normalised_omb, ...]
-        tiled = jnp.column_stack([x, jnp.tile(params, (len(x), 1))])
+        # x is now (1, n_training_grid) — flatten for MLP input.
+        x_flat = x[0]  # (n_training,)
+        params_flat = params[0]  # (4,)
 
-        preds = mlp(
-            loaded["params"], tiled, act=loaded["hyperparams"]["act"]
+        # Build tiled input: each row is [z_norm_i, param0_norm, ...]
+        tiled = jnp.column_stack(
+            [x_flat, jnp.tile(params_flat, (len(x_flat), 1))]
         )
+        preds = mlp(loaded["params"], tiled, act=loaded["hyperparams"]["act"])
 
-        # Reshape to (1, n_z) before the backward pass so per-frequency
-        # statistics (shape len_z,) broadcast correctly.
+        # Backward pass to recover physical units on the training grid.
         preds = preds.reshape(1, -1)
+        x_back = x
         for pipe in reversed(pipeline):
-            preds, _, _ = pipe.backward(preds, x, params)
+            preds, x_back, params = pipe.backward(preds, x_back, params)
 
-        results.append(preds.reshape(-1))
+        # x_back is now (1, n_training_grid) in original z-space.
+        # Interpolate to the user's requested z_grid.
+        z_train = x_back[0]
+        result = jnp.interp(z_grid_orig, z_train, preds.reshape(-1))
+        results.append(result)
 
     return results[0], results[1]
