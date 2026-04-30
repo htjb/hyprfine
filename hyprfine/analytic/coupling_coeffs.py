@@ -3,8 +3,20 @@
 import jax
 from jax import numpy as jnp
 
-from hyprfine.parameters import const, cosmology
+from hyprfine.parameters import const, cosmology, astrophysics
+from hyprfine.analytic.wouthuysen_field import J_alpha
 from hyprfine.utils.cosmology import n_H_tot
+
+
+def x_alpha(z: float, cosmo: cosmology, astro: astrophysics, T_cmb0: float = 2.725):
+    """Dimensionless Lyman-alpha coupling coefficient."""
+    J_alpha_c_inv = 1.811e11 / (1 + z) * (2.725 / T_cmb0)  # cm2 s Hz sr
+    # S_alpha is an order-unity correction factor, ~1 for now
+    S_alpha = 1.0
+
+    nu, jalpha_values = J_alpha(z, cosmo, astro)  # Get J_alpha values
+    jalpha_alpha = jnp.interp(const.lyman_alpha_freq, nu, jalpha_values) 
+    return S_alpha * jalpha_alpha * J_alpha_c_inv
 
 
 @jax.jit

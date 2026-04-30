@@ -3,10 +3,10 @@
 import jax
 import jax.numpy as jnp
 
-from hyprfine.analytic.coupling_coeffs import xc
+from hyprfine.analytic.coupling_coeffs import xc, x_alpha
 from hyprfine.analytic.signal import T21
 from hyprfine.analytic.temperatures import Tcmb, Ts
-from hyprfine.parameters import cosmology
+from hyprfine.parameters import cosmology, astrophysics
 from hyprfine.recombination.emulator import call_hyrec_emulator
 
 xcvmap = jax.vmap(xc, in_axes=(0, 0, 0, None))
@@ -16,9 +16,21 @@ vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, 0, None))
 def generate_signal(
     f_grid: jnp.ndarray,
     cosmo: cosmology,
+    astro: astrophysics,
     z_init: int,
     detailed_output: bool = False,
-) -> jnp.ndarray | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+) -> (
+    jnp.ndarray
+    | tuple[
+        jnp.ndarray,
+        jnp.ndarray,
+        jnp.ndarray,
+        jnp.ndarray,
+        jnp.ndarray,
+        jnp.ndarray,
+        jnp.ndarray,
+    ]
+):
     """Generate 21cm signal for a given cosmological sample.
 
     Args:
@@ -45,11 +57,15 @@ def generate_signal(
 
         T_cmb = Tcmb(z_grid)
 
-        T_s = Ts(T_gas, T_cmb, xc_values)
+        xalpha_values = jax.vmap(x_alpha, in_axes=(0, None, None, None))(
+            z_grid, cosmo, astro, Tcmb(0)
+        )
+
+        T_s = Ts(T_gas, T_cmb, xc_values, xalpha_values)
 
         T21_values = vmappedT21(z_grid, T_gas, T_cmb, T_s, xe, cosmo)
         if detailed_output:
-            return T21_values, xe, T_gas, xc_values
+            return T21_values, xe, T_gas, xc_values, T_s, T_cmb, xalpha_values
         else:
             return T21_values
     except Exception as e:

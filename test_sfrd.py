@@ -47,6 +47,8 @@ mean_sfrd_values = jnp.array(
         for i in z_values
     ]
 )
+print(jnp.interp(20, z_values, mean_sfrd_values))
+exit()
 
 plt.plot(z_values, 10**3 * mean_sfrd_values, label="Mean SFRD")
 plt.yscale("log")
