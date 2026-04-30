@@ -11,13 +11,13 @@ from hyprfine.recombination.emulator import call_hyrec_emulator
 
 xcvmap = jax.vmap(xc, in_axes=(0, 0, 0, None))
 vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, 0, None))
+vmappedxalpha = jax.vmap(x_alpha, in_axes=(0, None, None, None))
 
 
 def generate_signal(
     f_grid: jnp.ndarray,
     cosmo: cosmology,
-    astro: astrophysics,
-    skip_cosmic_dawn: bool = False,
+    astro: astrophysics | None = None,
     detailed_output: bool = False,
 ) -> (
     jnp.ndarray
@@ -53,10 +53,10 @@ def generate_signal(
             omc=cosmo.Omega_c,
             yhe=cosmo.Y_He,
         )
-        if skip_cosmic_dawn:
+        if astro is None:
             xalpha_values = jnp.zeros_like(z_grid)
         else:
-            xalpha_values = jax.vmap(x_alpha, in_axes=(0, None, None, None))(
+            xalpha_values = vmappedxalpha(
                 z_grid, cosmo, astro, Tcmb(0)
             )
         # use hyrec down to z=50 then solve my own ODE for Tk with
