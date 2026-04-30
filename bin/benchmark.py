@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from hyprfine.analytic.main import generate_signal
-from hyprfine.parameters import cosmology
+from hyprfine.parameters import cosmology, astrophysics
 
 # ---------------------------------------------------------------------------
 # Planck 2018 cosmology
@@ -27,7 +27,14 @@ planck = cosmology(
     ln1010As=3.0448,
 )
 
-f_grid = jnp.linspace(1.0, 100.0, 500)  # MHz
+astro = astrophysics(
+    epsilon=0.1,
+    alpha_star=0.5,
+    beta_star=-0.5,
+    M_pivot=3e11,
+)
+
+f_grid = jnp.linspace(1.0, 200.0, 500)  # MHz
 
 
 def time_device(device: jax.Device) -> tuple[float, float]:
@@ -43,13 +50,13 @@ def time_device(device: jax.Device) -> tuple[float, float]:
 
     # Cold run — includes JIT compilation
     t0 = time.perf_counter()
-    sig = generate_signal(f, planck, 1100)
+    sig = generate_signal(f, planck, astro)
     jax.block_until_ready(sig)
     cold = time.perf_counter() - t0
 
     # Warm run
     t0 = time.perf_counter()
-    sig = generate_signal(f, planck, 1100)
+    sig = generate_signal(f, planck, astro)
     jax.block_until_ready(sig)
     warm = time.perf_counter() - t0
 
