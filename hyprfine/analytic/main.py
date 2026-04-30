@@ -17,7 +17,7 @@ def generate_signal(
     f_grid: jnp.ndarray,
     cosmo: cosmology,
     astro: astrophysics,
-    z_init: int,
+    skip_cosmic_dawn: bool = False,
     detailed_output: bool = False,
 ) -> (
     jnp.ndarray
@@ -37,7 +37,8 @@ def generate_signal(
         f_grid: Frequency grid in MHz.
         cosmo: Cosmological parameters [H0, Omega_m, Omega_b, Omega_c,
                 Y_He].
-        z_init: Initial redshift.
+        astro: Astrophysical parameters.
+        skip_cosmic_dawn: Whether to skip cosmic dawn.
         detailed_output: Whether to return detailed outputs (xe, Tk, xc).
 
     Returns:
@@ -52,14 +53,29 @@ def generate_signal(
             omc=cosmo.Omega_c,
             yhe=cosmo.Y_He,
         )
+        if skip_cosmic_dawn:
+            xalpha_values = jnp.zeros_like(z_grid)
+        else:
+            xalpha_values = jax.vmap(x_alpha, in_axes=(0, None, None, None))(
+                z_grid, cosmo, astro, Tcmb(0)
+            )
+        # use hyrec down to z=50 then solve my own ODE for Tk with
+        # X-ray heating term and my own ODE for xe with
+        # sed of ionizing sources. same process for Xray and ionizing flux as
+        # for J_alpha in wouthuysen_field.py, but with different seds
+        T_gas_z50 = jnp.interp(50, z_grid[::-1], T_gas[::-1])
+        T_gas_beyond_z50 = (
+            T_gas_z50 * (1 + z_grid[z_grid <= 50]) ** 2 / (1 + 50) ** 2
+        )
+        T_gas = jnp.concat([T_gas[z_grid >= 50], T_gas_beyond_z50])
+
+        # xe_z50 = jnp.interp(50, z_grid[::-1], xe[::-1])
+        xe_beyond_z50 = jnp.ones_like(z_grid[z_grid <= 10])
+        xe = jnp.concat([xe[z_grid >= 10], xe_beyond_z50])
 
         xc_values = xcvmap(z_grid, xe, T_gas, cosmo)
 
         T_cmb = Tcmb(z_grid)
-
-        xalpha_values = jax.vmap(x_alpha, in_axes=(0, None, None, None))(
-            z_grid, cosmo, astro, Tcmb(0)
-        )
 
         T_s = Ts(T_gas, T_cmb, xc_values, xalpha_values)
 
