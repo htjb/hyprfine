@@ -23,6 +23,8 @@ planck = cosmology(
     Omega_b=0.0494,
     Omega_c=0.2664,
     Y_He=0.2454,
+    ns=0.96605,
+    ln1010As=3.0448,
 )
 
 f_grid = jnp.linspace(1.0, 100.0, 500)  # MHz
@@ -41,13 +43,13 @@ def time_device(device: jax.Device) -> tuple[float, float]:
 
     # Cold run — includes JIT compilation
     t0 = time.perf_counter()
-    sig = generate_signal(f, planck)
+    sig = generate_signal(f, planck, 1100)
     jax.block_until_ready(sig)
     cold = time.perf_counter() - t0
 
     # Warm run
     t0 = time.perf_counter()
-    sig = generate_signal(f, planck)
+    sig = generate_signal(f, planck, 1100)
     jax.block_until_ready(sig)
     warm = time.perf_counter() - t0
 
