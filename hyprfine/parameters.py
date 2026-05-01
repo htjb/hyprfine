@@ -43,6 +43,19 @@ constants = namedtuple(
         "lyman_alpha_freq",  # Ly-α frequency in Hz
         "lyman_beta_freq",  # Ly-β frequency in Hz
         "lyman_limit",  # Lyman limit frequency in Hz
+        "sigma_SB_cgs",  # Stefan-Boltzmann constant in cgs units (erg/cm^2/s/K^4)
+        "sigma_T_cgs",  # Thomson cross-section in cgs units (cm^2)
+        "h_planck_cgs",  # Planck constant in erg·s
+        "m_e_cgs",  # electron mass in g
+        "c_cgs",  # speed of light in cm/s
+        "k_b_cgs",  # Boltzmann constant in erg/K
+    ],
+)
+
+conversion_factors = namedtuple(
+    "conversion_factors",
+    [
+        "keV_to_Hz",  # Conversion factor from keV to Hz
     ],
 )
 
@@ -61,4 +74,14 @@ const = constants(
     lyman_alpha_freq=2.466e15,  # Hz
     lyman_beta_freq=2.922e15,  # Hz lyman_limit=3.289e15, # Hz
     lyman_limit=3.289e15,  # Hz
+    sigma_T_cgs = 6.652e-25,  # cm^2, Thomson cross section
+    sigma_SB_cgs = 5.671e-5,  # erg/cm^2/s/K^4, Stefan-Boltzmann constant
+    h_planck_cgs=6.626e-27,      # erg·s
+    m_e_cgs=9.109e-28,       # g
+    c_cgs=2.998e10,          # cm/s
+    k_b_cgs=1.381e-16,       # erg/K
+)
+
+conv = conversion_factors(
+    keV_to_Hz=2.418e17,  # Hz/keV
 )

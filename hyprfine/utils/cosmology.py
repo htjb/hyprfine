@@ -7,6 +7,19 @@ from hyprfine.matterpower import matterpowerspec
 from hyprfine.parameters import const, cosmology
 
 
+def H(z: float, cosmo: cosmology) -> float:
+    """Calculate the Hubble parameter H in s^-1.
+
+    Args:
+        z: Redshift.
+        cosmo: Cosmology object.
+
+    Returns:
+        H(z): Hubble parameter at redshift z in s^-1.
+    """
+    Omega_L = 1.0 - cosmo.Omega_m
+    return cosmo.H0 * jnp.sqrt(cosmo.Omega_m * (1 + z)**3 + Omega_L)
+
 @jax.jit
 def n_H_tot(z: int, cosmo: cosmology) -> jnp.ndarray:
     """Mean hydrogen number density in m^-3.

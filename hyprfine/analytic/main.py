@@ -3,11 +3,12 @@
 import jax
 import jax.numpy as jnp
 
-from hyprfine.analytic.coupling_coeffs import xc, x_alpha
+from hyprfine.analytic.coupling_coeffs import x_alpha, xc
 from hyprfine.analytic.signal import T21
 from hyprfine.analytic.temperatures import Tcmb, Ts
-from hyprfine.parameters import cosmology, astrophysics
+from hyprfine.parameters import astrophysics, cosmology
 from hyprfine.recombination.emulator import call_hyrec_emulator
+from hyprfine.recombination.odes import evolve_igm
 
 xcvmap = jax.vmap(xc, in_axes=(0, 0, 0, None))
 vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, 0, None))
@@ -56,22 +57,28 @@ def generate_signal(
         if astro is None:
             xalpha_values = jnp.zeros_like(z_grid)
         else:
-            xalpha_values = vmappedxalpha(
-                z_grid, cosmo, astro, Tcmb(0)
-            )
-        # use hyrec down to z=50 then solve my own ODE for Tk with
-        # X-ray heating term and my own ODE for xe with
-        # sed of ionizing sources. same process for Xray and ionizing flux as
-        # for J_alpha in wouthuysen_field.py, but with different seds
+            xalpha_values = vmappedxalpha(z_grid, cosmo, astro, Tcmb(0))
+
         T_gas_z50 = jnp.interp(50, z_grid[::-1], T_gas[::-1])
-        T_gas_beyond_z50 = (
-            T_gas_z50 * (1 + z_grid[z_grid <= 50]) ** 2 / (1 + 50) ** 2
+        xe_z50 = jnp.interp(50, z_grid[::-1], xe[::-1])
+        
+        z_out, evolved_Tk, evolved_xe = evolve_igm(
+            z_start=50,
+            z_end=z_grid[-1],
+            Tk_init=T_gas_z50,
+            xe_init=xe_z50,
+            cosmo=cosmo,
+            astro=astro,
+        )
+        T_gas_beyond_z50 = jnp.interp(
+            z_grid[z_grid <= 50], z_out[::-1], evolved_Tk[::-1]
         )
         T_gas = jnp.concat([T_gas[z_grid >= 50], T_gas_beyond_z50])
 
-        # xe_z50 = jnp.interp(50, z_grid[::-1], xe[::-1])
-        xe_beyond_z50 = jnp.ones_like(z_grid[z_grid <= 10])
-        xe = jnp.concat([xe[z_grid >= 10], xe_beyond_z50])
+        xe_beyond_z50 = jnp.interp(
+            z_grid[z_grid <= 50], z_out[::-1], evolved_xe[::-1]
+        )
+        xe = jnp.concat([xe[z_grid >= 50], xe_beyond_z50])
 
         xc_values = xcvmap(z_grid, xe, T_gas, cosmo)
 
@@ -85,5 +92,5 @@ def generate_signal(
         else:
             return T21_values
     except Exception as e:
-        print(f"Error generating signal for sample {cosmo}: {e}")
-        return jnp.full_like(f_grid, jnp.nan)
+       print(f"Error generating signal for sample {cosmo}: {e}")
+       return jnp.full_like(f_grid, jnp.nan)

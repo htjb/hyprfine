@@ -6,6 +6,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from jax import config
+config.update("jax_enable_x64", True)
+
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt

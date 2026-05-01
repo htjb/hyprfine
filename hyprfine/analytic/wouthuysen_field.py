@@ -3,8 +3,9 @@
 import jax
 import jax.numpy as jnp
 
-from hyprfine.parameters import astrophysics, const, cosmology
 from hyprfine.analytic.sfrd import mean_sfrd
+from hyprfine.parameters import astrophysics, const, cosmology
+from hyprfine.utils.cosmology import H
 
 vmapped_mean_sfrd = jax.vmap(mean_sfrd, in_axes=(0, None, None, None))
 # Build once at module level
@@ -67,14 +68,9 @@ def J_alpha(
         nu: Frequency grid corresponding to epsilon_alpha^tot (shape (N_freq,))
         J_alpha: Lyman-alpha flux as a function of frequency, shape (N_freq,).
     """
-    Omega_L = 1.0 - cosmo.Omega_m
-
-    def H(zp):
-        return cosmo.H0 * jnp.sqrt(cosmo.Omega_m * (1 + zp) ** 3 + Omega_L)
-
     def chi_single(z_s):
         z_int = jnp.linspace(z, z_s, 500)
-        integrand = (const.c / 1e3) / H(z_int)  # km/s / (km/s/Mpc) = Mpc
+        integrand = (const.c / 1e3) / H(z_int, cosmo) # Gives Mpc
         return jnp.trapezoid(integrand, z_int)
 
     # Build chi(z') table and invert to get z'(R)
