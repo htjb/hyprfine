@@ -8,23 +8,24 @@ from hyprfine.analytic.xrays import J_X, sigma_X
 from hyprfine.parameters import astrophysics, const, cosmology
 from hyprfine.utils.cosmology import H, n_H_tot
 
-
+@jax.jit
 def f_heat_SSvS(xe):
     xe = jnp.clip(xe, 0.0, 1.0)
     return 0.9971 * (1 - (1 - xe**0.2663) ** 1.3163)
 
-
+@jax.jit
 def f_ion_SSvS(xe):
     xe = jnp.clip(xe, 0.0, 1.0)
     return 0.3908 * (1 - xe**0.4092) ** 1.7592
 
-
+@jax.jit
 def dt_dz(z, cosmo):
     """dt/dz in seconds per unit redshift."""
     H_z = H(z, cosmo) * 1e3 / const.Mpc  # s^-1
     return -1.0 / (H_z * (1 + z))
 
 
+@jax.jit
 def dTk_dz(z, Tk, xe, cosmo, Q_X):
     """dT_k/dz including adiabatic cooling, Compton heating, X-ray heating.
 
@@ -39,9 +40,6 @@ def dTk_dz(z, Tk, xe, cosmo, Q_X):
         dTk/dz in K.
     """
     dtdz = dt_dz(z, cosmo)
-
-    # Adiabatic cooling [K/s]
-    adiabatic = -2 * Tk / dt_dz(z, cosmo) / (1 + z)
 
     # Compton heating [K/s]
     T_cmb_z = const.Tcmb0 * (1 + z)
@@ -62,7 +60,7 @@ def dTk_dz(z, Tk, xe, cosmo, Q_X):
 
     return 2 * Tk / (1 + z) + dtdz * (compton_rate + xray_rate)
 
-
+@jax.jit
 def dxe_dz(z, Tk, xe, cosmo, Gamma_X):
     """dx_e/dz including recombination and X-ray secondary ionization.
 
@@ -126,6 +124,11 @@ def evolve_igm(
     h_nu_HI = const.h_planck_cgs * 3.288e15  # erg
     sig = sigma_X(nu)
 
+    def interp_jx(j_nu, z):
+        return jnp.interp(z, z_grid, j_nu)
+    
+    vmapped_interp_jx = jax.vmap(interp_jx, in_axes=(0, None))
+
     def vector_field(z, state, args):
         Tk, xe = state
         cosmo, astro = args
@@ -134,9 +137,7 @@ def evolve_igm(
         Tk = jnp.maximum(Tk, 0.1)  # prevent Tk going to zero
 
         # Interpolate J_X at current z
-        jx = jax.vmap(
-            lambda jx_nu: jnp.interp(z, z_grid, jx_nu)
-        )(jx_grid_T)
+        jx = vmapped_interp_jx(jx_grid_T, z)
 
         nH_cm3 = n_H_tot(z, cosmo) * 1e-6
         f_heat = f_heat_SSvS(xe)

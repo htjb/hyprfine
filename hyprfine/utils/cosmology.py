@@ -6,7 +6,7 @@ import jax.numpy as jnp
 from hyprfine.matterpower import matterpowerspec
 from hyprfine.parameters import const, cosmology
 
-
+@jax.jit
 def H(z: float, cosmo: cosmology) -> float:
     """Calculate the Hubble parameter H in s^-1.
 

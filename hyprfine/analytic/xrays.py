@@ -9,6 +9,7 @@ from hyprfine.utils.cosmology import H, n_H_tot
 
 vmapped_mean_sfrd = jax.vmap(mean_sfrd, in_axes=(0, None, None, None))
 
+@jax.jit
 def J_X(
     z: float,
     cosmo: cosmology,
@@ -73,6 +74,7 @@ def J_X(
         integrand, R, axis=0
     ) * unit_factor  # erg/s/cm^2/Hz/sr
 
+@jax.jit
 def calculate_epsilon_x_tot(
     z_source: float,
     z_21: float,
@@ -108,6 +110,7 @@ vmapped_calculate_epsilon_x_tot = (
     jax.vmap(calculate_epsilon_x_tot, in_axes=(0, None, None, None))
 )
 
+@jax.jit
 def calculate_epsilon_x_intrinsic(
     nu: jnp.ndarray,
     L40: float = 1.0,
@@ -149,6 +152,7 @@ def calculate_epsilon_x_intrinsic(
 
     return epsilon_x
 
+@jax.jit
 def sigma_X(nu: jnp.ndarray) -> jnp.ndarray:
     """HI photoionization cross section.
 
@@ -164,7 +168,7 @@ def sigma_X(nu: jnp.ndarray) -> jnp.ndarray:
     sigma_0 = 6.3e-18  # cm^2
     return jnp.where(nu >= nu_HI, sigma_0 * (nu / nu_HI) ** (-3), 0.0)
 
-
+@jax.jit
 def tau_X(
     nu_obs: float,
     z_obs: float,

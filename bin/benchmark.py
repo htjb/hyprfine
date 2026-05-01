@@ -16,6 +16,10 @@ import numpy as np
 
 from hyprfine.analytic.main import generate_signal
 from hyprfine.parameters import cosmology, astrophysics
+import sys
+
+if len(sys.argv) > 1 and sys.argv[1] == "--no-gpu":
+    skip_gpu = True
 
 # ---------------------------------------------------------------------------
 # Planck 2018 cosmology
@@ -80,14 +84,15 @@ results = {"CPU (cold)": cpu_cold, "CPU (warm)": cpu_warm}
 # Optionally benchmark CUDA GPU
 # ---------------------------------------------------------------------------
 try:
-    gpus = jax.devices("gpu")
-    if gpus:
-        gpu = gpus[0]
-        print(f"Benchmarking GPU ({gpu.device_kind})...")
-        gpu_cold, gpu_warm, _ = time_device(gpu)
-        print(f"  Cold: {gpu_cold:.3f} s   Warm: {gpu_warm:.3f} s")
-        results["GPU (cold)"] = gpu_cold
-        results["GPU (warm)"] = gpu_warm
+    if not skip_gpu:
+        gpus = jax.devices("gpu")
+        if gpus:
+            gpu = gpus[0]
+            print(f"Benchmarking GPU ({gpu.device_kind})...")
+            gpu_cold, gpu_warm, _ = time_device(gpu)
+            print(f"  Cold: {gpu_cold:.3f} s   Warm: {gpu_warm:.3f} s")
+            results["GPU (cold)"] = gpu_cold
+            results["GPU (warm)"] = gpu_warm
 except RuntimeError:
     print("No CUDA GPU found — skipping GPU benchmark.")
 

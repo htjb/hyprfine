@@ -41,6 +41,7 @@ _NU_GRID = 10 ** jnp.arange(
     jnp.log10(const.lyman_alpha_freq), jnp.log10(const.lyman_limit), 0.001
 )
 
+@jax.jit
 def J_alpha(
     z: float,
     cosmo: cosmology,
