@@ -18,6 +18,7 @@ from hyprfine.analytic.main import generate_signal
 from hyprfine.parameters import cosmology, astrophysics
 import sys
 
+skip_gpu = False
 if len(sys.argv) > 1 and sys.argv[1] == "--no-gpu":
     skip_gpu = True
 
