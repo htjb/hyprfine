@@ -30,6 +30,7 @@ planck = cosmology(
     Omega_m=0.3158,
     Omega_b=0.0494,
     Omega_c=0.2664,
+    Omega_r=9e-5,
     Y_He=0.2454,
     ns=0.96605,
     ln1010As=3.0448,
@@ -40,9 +41,11 @@ astro = astrophysics(
     alpha_star=0.5,
     beta_star=-0.5,
     M_pivot=3e11,
+    f_esc=0.15,
+    N_ion=5000.0,
 )
 
-f_grid = jnp.linspace(1.0, 200.0, 500)  # MHz
+f_grid = jnp.linspace(5.0, 300.0, 500)  # MHz
 
 
 def time_device(device: jax.Device) -> tuple[float, float]:

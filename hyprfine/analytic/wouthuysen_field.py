@@ -85,7 +85,7 @@ def J_alpha(
     Mh = 10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100)
 
     # SFRD and epsilon at each shell
-    sfrd_R = vmapped_mean_sfrd(z_prime, Mh, astro, cosmo)
+    sfrd_R = vmapped_mean_sfrd(z_prime, Mh, astro, cosmo) # comoving Msun/yr/Mpc^3 at each shell
     eps_R = jnp.array(
         [calculate_epsilon_alpha_tot(z_source=zp, z_21=z) for zp in z_prime]
     )  # (N_shells, N_freq)
@@ -109,6 +109,9 @@ def J_alpha(
     #   the Hz^-1 comes from the fact that epsilon is per unit frequency implicitly
 
     unit_factor = Msun_to_kg / yr_to_s / Mpc_to_cm**2
+
+    # integral is over comoving shells, so we need to convert the SFRD from comoving to physical units
+    # and the (1+z)^2 factor accounts for this
     
     return nu, (1 + z) ** 2 / (4 * jnp.pi) * jnp.trapezoid(
         integrand, R, axis=0

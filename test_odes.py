@@ -11,13 +11,14 @@ from hyprfine.recombination.emulator import call_hyrec_emulator
 
 
 
-f_grid = jax.numpy.linspace(5, 200, 500)  # Example frequency grid in MHz
+f_grid = jax.numpy.linspace(5, 300, 500)  # Example frequency grid in MHz
 
 cosmo = cosmology(
     H0=67.36,
     Omega_m=0.315,
     Omega_b=0.049,
     Omega_c=0.266,
+    Omega_r=9e-5,
     Y_He=0.245,
     ns=0.97,
     ln1010As=3.044,
@@ -28,6 +29,8 @@ astro = astrophysics(
     alpha_star=0.5,
     beta_star=-0.5,
     M_pivot=3e11,
+    f_esc=0.15,
+    N_ion=5000.0,
 )
 
 z_grid = 1420.4 / (f_grid) - 1

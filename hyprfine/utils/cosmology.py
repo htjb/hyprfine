@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from hyprfine.matterpower import matterpowerspec
 from hyprfine.parameters import const, cosmology
 
+
 @jax.jit
 def H(z: float, cosmo: cosmology) -> float:
     """Calculate the Hubble parameter H in s^-1.
@@ -18,7 +19,10 @@ def H(z: float, cosmo: cosmology) -> float:
         H(z): Hubble parameter at redshift z in s^-1.
     """
     Omega_L = 1.0 - cosmo.Omega_m
-    return cosmo.H0 * jnp.sqrt(cosmo.Omega_m * (1 + z)**3 + Omega_L)
+    return cosmo.H0 * jnp.sqrt(
+        cosmo.Omega_m * (1 + z) ** 3 + Omega_L + cosmo.Omega_r * (1 + z) ** 4
+    )
+
 
 @jax.jit
 def n_H_tot(z: int, cosmo: cosmology) -> jnp.ndarray:
@@ -54,11 +58,11 @@ def rhom(z: int, cosmo: cosmology) -> jnp.ndarray:
         (3 * H0**2 / (8 * jnp.pi * const.G))
         * (cosmo.Omega_b + cosmo.Omega_c)
         * (1 + z) ** 3
-    ) # in kg/m^3
+    )  # in kg/m^3
 
     conversion_factor = const.Mpc**3 / const.Msun
 
-    return rho_bar * conversion_factor # in M_sun/Mpc^3
+    return rho_bar * conversion_factor  # in M_sun/Mpc^3
 
 
 def growth_factor(z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
@@ -94,6 +98,7 @@ def growth_factor(z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
 
     return g(z) / (g(0.0) * (1 + z))
 
+
 def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Calculate the variance of the density field.
 
@@ -125,15 +130,10 @@ def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
         window_func = (
             3 * (jnp.sin(R * k) - k * R * jnp.cos(R * k)) / (R * k) ** 3
         )
-        return (
-            k**2
-            / (2 * jnp.pi**2)
-            * pk
-            * jnp.abs(window_func) ** 2
-        )
+        return k**2 / (2 * jnp.pi**2) * pk * window_func**2
 
-    kmodes, power = matterpowerspec(cosmo, z=0)  # in h/Mpc and (Mpc/h)^3
-    R_h = R #* cosmo.H0 / 100.0  # Convert R from Mpc to Mpc/h
+    kmodes, power = matterpowerspec(cosmo, z=0)  # in 1/Mpc and Mpc^3
+    R_h = R  # * cosmo.H0 / 100.0  # Convert R from Mpc to Mpc/h
     vmapped_integrand = jax.vmap(integrand, (None, None, 0))
     integrand_values = vmapped_integrand(kmodes, power, R_h)
     sigma_squared = jnp.trapezoid(integrand_values, kmodes, axis=1)

@@ -70,6 +70,9 @@ def J_X(
         200,
     )
 
+    # integral is over comoving shells, so we need to convert the SFRD from comoving to physical units
+    # and the (1+z)^2 factor accounts for this
+
     return nu, (1 + z)**2 / (4 * jnp.pi) * jnp.trapezoid(
         integrand, R, axis=0
     ) * unit_factor  # erg/s/cm^2/Hz/sr

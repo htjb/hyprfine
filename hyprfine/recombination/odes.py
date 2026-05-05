@@ -5,6 +5,7 @@ import jax
 import jax.numpy as jnp
 
 from hyprfine.analytic.xrays import J_X, sigma_X
+from hyprfine.analytic.ionization import nion_dot
 from hyprfine.parameters import astrophysics, const, cosmology
 from hyprfine.utils.cosmology import H, n_H_tot
 
@@ -26,7 +27,7 @@ def dt_dz(z, cosmo):
 
 
 @jax.jit
-def dTk_dz(z, Tk, xe, cosmo, Q_X):
+def dTk_dz(z, Tk, xe, cosmo, Q_X, niondot):
     """dT_k/dz including adiabatic cooling, Compton heating, X-ray heating.
 
     Args:
@@ -58,10 +59,19 @@ def dTk_dz(z, Tk, xe, cosmo, Q_X):
         * nH_cm3
     )
 
+    # # not sure about thsi term
+    # ev_to_erg = 1.60218e-12
+    # E_heat_erg = 10 * ev_to_erg # eV in erg
+    # uv_rate = E_heat_erg * niondot * (1 - xe) / (
+    #     1.5 * const.k_b_cgs
+    #     * (1 + xe + cosmo.Y_He / 4)
+    #     * nH_cm3
+    # )
+
     return 2 * Tk / (1 + z) + dtdz * (compton_rate + xray_rate)
 
 @jax.jit
-def dxe_dz(z, Tk, xe, cosmo, Gamma_X):
+def dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot):
     """dx_e/dz including recombination and X-ray secondary ionization.
 
     Args:
@@ -70,7 +80,7 @@ def dxe_dz(z, Tk, xe, cosmo, Gamma_X):
         xe: Ionization fraction.
         cosmo: Cosmology object.
         Gamma_X: X-ray ionization rate per H atom [s^-1].
-
+        niondot: Ionization rate per H atom [s^-1].
     Returns:
         dxe/dz.
     """
@@ -80,10 +90,16 @@ def dxe_dz(z, Tk, xe, cosmo, Gamma_X):
     # Case B recombination coefficient
     alpha_B = 2.6e-13 * (Tk / 1e4) ** (-0.76)  # cm^3/s
 
-    recomb = alpha_B * nH_cm3 * xe**2
-    xray_ion = Gamma_X * (1 - xe)
+    # clumping factor
+    C_HII = jnp.maximum(1.0, 2.9*((1 + z) / 6) ** (-1.1))
 
-    return dtdz * (-recomb + xray_ion)
+    recomb = C_HII * alpha_B * nH_cm3 * xe**2
+    xray_ion = Gamma_X * (1 - xe)
+    uv_ion = (niondot / nH_cm3)
+
+    dxe = dtdz * (-recomb + xray_ion + uv_ion)
+    # Prevent xe from exceeding 1: clamp derivative to non-negative when xe >= 1
+    return jnp.where(xe >= 1.0, jnp.maximum(0.0, dxe), dxe)
 
 
 def evolve_igm(
@@ -153,14 +169,14 @@ def evolve_igm(
         Gamma_X = 4 * jnp.pi * f_ion * jnp.trapezoid(
             jx * sig / (const.h_planck_cgs * nu), nu
         )
-        #Q_X = 0
-        #Gamma_X = 0
+
+        niondot = nion_dot(z, cosmo, astro)
 
         return (
-            dTk_dz(z, Tk, xe, cosmo, Q_X),
-            dxe_dz(z, Tk, xe, cosmo, Gamma_X),
+            dTk_dz(z, Tk, xe, cosmo, Q_X, niondot),
+            dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot),
         )
-
+    
     term = diffrax.ODETerm(vector_field)
     solver = diffrax.Kvaerno5()
 

@@ -10,17 +10,19 @@ from hyprfine.utils.cosmology import growth_factor, rhom, sigma, sigma0
 def fstar(
     astro: astrophysics,
     M_h: jnp.ndarray,
+    z: jnp.ndarray,
 ) -> jnp.ndarray:
     """Calculate the star formation efficiency fstar.
 
     Args:
         astro: astrophysics parameters.
         M_h: Halo mass in solar masses.
+        z: Redshift.
 
     Returns:
         fstar: Star formation efficiency.
     """
-    M_turn = 3.3e7  # from zeus21 code in Msun
+    M_turn = 3.3e7 * ((1 + z) / (21)) ** (-1.5)
     f_duty = jnp.exp(-M_turn / M_h)
     f_star = (2.0 * astro.epsilon * f_duty) / (
         (M_h / astro.M_pivot) ** (-astro.alpha_star)
@@ -45,7 +47,11 @@ def dmh_dt(M_h: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
         46.1
         * (M_h / 1e12) ** 1.1
         * (1 + 1.11 * z)
-        * jnp.sqrt(cosmo.Omega_m * (1 + z) ** 3 + omega_L)
+        * jnp.sqrt(
+            cosmo.Omega_m * (1 + z) ** 3
+            + omega_L
+            + cosmo.Omega_r * (1 + z) ** 4
+        )
     )
 
 
@@ -66,7 +72,7 @@ def dmstar_dt(
     Returns:
         dm_star/dt: Star formation rate in solar masses per year.
     """
-    f_star = fstar(astro, m_h)
+    f_star = fstar(astro, m_h, z)
     f_b = cosmo.Omega_b / cosmo.Omega_m
     dm_h_dt = dmh_dt(m_h, z, cosmo)
     return f_star * f_b * dm_h_dt
@@ -85,7 +91,7 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     """
     Pst = 0.3
     Ast = 0.3222 * jnp.sqrt(2 / jnp.pi)
-    qst = 0.707
+    qst = 0.85
     delta_crit = 1.686
     sigma_val = sigma(Mh, cosmo, z)
     nu = jnp.sqrt(qst) * delta_crit / sigma_val
@@ -122,7 +128,7 @@ def mean_sfrd(
     dn_dmh_val = dn_dmh(
         Mh, cosmo, z
     )  # in number density per solar mass per Mpc^3
-    return jnp.trapezoid(dmstar_dt_val * dn_dmh_val, Mh)
+    return jnp.trapezoid(dmstar_dt_val * dn_dmh_val * Mh, x=jnp.log(Mh))
 
 
 def delta_r(

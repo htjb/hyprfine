@@ -9,6 +9,7 @@ cosmology = namedtuple(
         "Omega_m",  # Matter density parameter
         "Omega_b",  # Baryon density parameter
         "Omega_c",  # Cold dark matter density parameter
+        "Omega_r",  # Radiation density parameter
         "Y_He",  # Helium mass fraction
         "ns",  # scalar spectral index of primordial fluctuations
         "ln1010As",  # amplitude of the primordial power spectrum
@@ -22,6 +23,8 @@ astrophysics = namedtuple(
         "alpha_star",  # power-law index for star formation efficiency
         "beta_star",  # power-law index for star formation efficiency
         "M_pivot",  # pivot mass for star formation efficiency
+        "f_esc", # escape fraction of ionizing photons
+        "N_ion", # number of ionizing photons produced per baryon in stars
     ],
 )
 
