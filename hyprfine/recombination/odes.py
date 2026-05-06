@@ -4,7 +4,7 @@ import diffrax
 import jax
 import jax.numpy as jnp
 
-from hyprfine.analytic.xrays import J_X, sigma_X
+from hyprfine.analytic.xrays import J_X, sigma_X, _NU_X_GRID
 from hyprfine.analytic.ionization import nion_dot
 from hyprfine.parameters import astrophysics, const, cosmology
 from hyprfine.utils.cosmology import H, n_H_tot
@@ -30,7 +30,7 @@ def dt_dz(z, cosmo):
 
 
 @jax.jit
-def dTk_dz(z, Tk, xe, cosmo, Q_X, niondot):
+def dTk_dz(z, Tk, xe, cosmo, Q_X, nH_cm3, dtdz):
     """dT_k/dz including adiabatic cooling, Compton heating, X-ray heating.
 
     Args:
@@ -43,8 +43,6 @@ def dTk_dz(z, Tk, xe, cosmo, Q_X, niondot):
     Returns:
         dTk/dz in K.
     """
-    dtdz = dt_dz(z, cosmo)
-
     # Compton heating [K/s]
     T_cmb_z = const.Tcmb0 * (1 + z)
     u_cmb = (4 * const.sigma_SB_cgs / const.c_cgs) * T_cmb_z**4
@@ -55,25 +53,15 @@ def dTk_dz(z, Tk, xe, cosmo, Q_X, niondot):
     )
 
     # X-ray heating [K/s]
-    nH_cm3 = n_H_tot(z, cosmo) * 1e-6
     xray_rate = Q_X / (
         1.5 * const.k_b_cgs * (1 + xe + cosmo.Y_He / 4) * nH_cm3
     )
-
-    # # not sure about thsi term
-    # ev_to_erg = 1.60218e-12
-    # E_heat_erg = 10 * ev_to_erg # eV in erg
-    # uv_rate = E_heat_erg * niondot * (1 - xe) / (
-    #     1.5 * const.k_b_cgs
-    #     * (1 + xe + cosmo.Y_He / 4)
-    #     * nH_cm3
-    # )
 
     return 2 * Tk / (1 + z) + dtdz * (compton_rate + xray_rate)
 
 
 @jax.jit
-def dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot):
+def dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot, nH_cm3, dtdz):
     """dx_e/dz including recombination and X-ray secondary ionization.
 
     Args:
@@ -87,9 +75,6 @@ def dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot):
     Returns:
         dxe/dz.
     """
-    dtdz = dt_dz(z, cosmo)
-    nH_cm3 = n_H_tot(z, cosmo) * 1e-6
-
     # Case B recombination coefficient
     alpha_B = 2.6e-13 * (Tk / 1e4) ** (-0.76)  # cm^3/s
 
@@ -136,7 +121,7 @@ def evolve_igm(
     """
     # Precompute J_X on a redshift grid
     z_grid = jnp.linspace(z_end, z_start, N_zgrid)
-    nu = J_X(z_start, cosmo, astro)[0]
+    nu = _NU_X_GRID
     jx_grid = jax.vmap(lambda z: J_X(z, cosmo, astro)[1])(z_grid)
     jx_grid_T = jx_grid.T
 
@@ -157,12 +142,10 @@ def evolve_igm(
         Tk, xe = state
         cosmo, astro = args
 
-        xe = jnp.clip(xe, 0.0, 1.0)
-        Tk = jnp.maximum(Tk, 0.1)  # prevent Tk going to zero
-
         # Interpolate J_X at current z
         jx = vmapped_interp_jx(jx_grid_T, z)
 
+        dtdz = dt_dz(z, cosmo)
         nH_cm3 = n_H_tot(z, cosmo) * 1e-6
         f_heat = f_heat_SSvS(xe)
         f_ion = f_ion_SSvS(xe)
@@ -192,8 +175,8 @@ def evolve_igm(
         niondot = jnp.interp(z, z_grid, niondot_grid)
 
         return (
-            dTk_dz(z, Tk, xe, cosmo, Q_X, niondot),
-            dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot),
+            dTk_dz(z, Tk, xe, cosmo, Q_X, nH_cm3, dtdz),
+            dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot, nH_cm3, dtdz),
         )
 
     term = diffrax.ODETerm(vector_field)

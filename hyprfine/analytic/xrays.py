@@ -10,6 +10,9 @@ from hyprfine.utils.cosmology import H, chi_single, n_H_tot
 vmapped_mean_sfrd = jax.vmap(mean_sfrd, in_axes=(0, None, None, None))
 vmapped_chi_single = jax.vmap(chi_single, in_axes=(0, None, None))
 
+_NU_X_GRID = jnp.logspace(
+    jnp.log10(0.5 * conv.keV_to_Hz), jnp.log10(2.0 * conv.keV_to_Hz), 200
+)
 
 @jax.jit
 def J_X(
@@ -68,19 +71,12 @@ def J_X(
 
     # Unit conversions: SFRD in Msun/yr/Mpc^3, epsilon in erg/s/Hz per Msun/yr
     # integral gives erg/s/Hz/Mpc^2, convert to erg/s/Hz/cm^2
-    Mpc_to_cm = 3.086e24
-    unit_factor = 1.0 / Mpc_to_cm**2  # Mpc^-2 -> cm^-2
-
-    nu = jnp.logspace(
-        jnp.log10(0.5 * conv.keV_to_Hz),
-        jnp.log10(2.0 * conv.keV_to_Hz),
-        200,
-    )
+    unit_factor = 1.0 / conv.Mpc_to_cm**2  # Mpc^-2 -> cm^-2 
 
     # integral is over comoving shells, so we need to convert the SFRD from comoving to physical units
     # and the (1+z)^2 factor accounts for this
 
-    return nu, (1 + z) ** 2 / (4 * jnp.pi) * jnp.trapezoid(
+    return _NU_X_GRID, (1 + z) ** 2 / (4 * jnp.pi) * jnp.trapezoid(
         integrand, R, axis=0
     ) * unit_factor  # erg/s/cm^2/Hz/sr
 
@@ -102,18 +98,14 @@ def calculate_epsilon_x_tot(
     Returns:
         Attenuated X-ray emissivity, shape (N_freq,)
     """
-    nu = 10 ** jnp.linspace(
-        jnp.log10(0.5 * conv.keV_to_Hz), jnp.log10(2.0 * conv.keV_to_Hz), 200
-    )
-
     # Frequency at source
-    nu_prime = nu * (1 + z_source) / (1 + z_21)
+    nu_prime = _NU_X_GRID * (1 + z_source) / (1 + z_21)
 
     # Intrinsic emissivity at source frequency
     epsilon_intrinsic = calculate_epsilon_x_intrinsic(nu_prime, astro)
 
     # Attenuation along line of sight for each frequency
-    tau = vmapped_tau_X(nu, z_21, z_source, cosmo)
+    tau = vmapped_tau_X(_NU_X_GRID, z_21, z_source, cosmo)
     # tau = jnp.zeros_like(nu)  # Placeholder: no attenuation for now
 
     return jnp.where(z_source > z_21, epsilon_intrinsic * jnp.exp(-tau), 0.0)
