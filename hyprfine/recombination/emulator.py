@@ -1,10 +1,13 @@
 """Emulator-based recombination, replacing the HYREC-2 C-code wrapper."""
 
+import warnings
 from pathlib import Path
 
 import jax.numpy as jnp
 from astroemu.network import mlp
 from astroemu.serialisation import load
+
+warnings.filterwarnings('ignore', message='.*Returning the config dict under.*')
 
 _DATA_DIR = Path(__file__).parent.parent / "data"
 

@@ -21,8 +21,6 @@ astro = astrophysics(
     alpha_star=0.5,
     beta_star=-0.5,
     M_pivot=3e11,
-    f_esc=0.15,
-    N_ion=5000.0,
 )
 
 Mh = 10 ** jnp.linspace(8, 13, 1000)

@@ -4,10 +4,11 @@ import jax
 import jax.numpy as jnp
 
 from hyprfine.analytic.sfrd import mean_sfrd
-from hyprfine.parameters import astrophysics, const, cosmology
-from hyprfine.utils.cosmology import H
+from hyprfine.parameters import astrophysics, const, cosmology, conv
+from hyprfine.utils.cosmology import chi_single
 
 vmapped_mean_sfrd = jax.vmap(mean_sfrd, in_axes=(0, None, None, None))
+vmapped_chi_single = jax.vmap(chi_single, in_axes=(0, None, None))
 # Build once at module level
 _F_REC_VALUES = jnp.array([
     1.0,     # n=2
@@ -69,14 +70,9 @@ def J_alpha(
         nu: Frequency grid corresponding to epsilon_alpha^tot (shape (N_freq,))
         J_alpha: Lyman-alpha flux as a function of frequency, shape (N_freq,).
     """
-    def chi_single(z_s):
-        z_int = jnp.linspace(z, z_s, 500)
-        integrand = (const.c / 1e3) / H(z_int, cosmo) # Gives Mpc
-        return jnp.trapezoid(integrand, z_int)
-
     # Build chi(z') table and invert to get z'(R)
     z_table = jnp.linspace(z + 0.01, z_max_source, 1000)
-    chi_table = jax.vmap(chi_single)(z_table)
+    chi_table = vmapped_chi_single(z_table, z, cosmo)
 
     R = jnp.linspace(chi_table[0], chi_table[-1], N_shells)
     z_prime = jnp.interp(R, chi_table, z_table)
@@ -87,7 +83,7 @@ def J_alpha(
     # SFRD and epsilon at each shell
     sfrd_R = vmapped_mean_sfrd(z_prime, Mh, astro, cosmo) # comoving Msun/yr/Mpc^3 at each shell
     eps_R = jnp.array(
-        [calculate_epsilon_alpha_tot(z_source=zp, z_21=z) for zp in z_prime]
+        [calculate_epsilon_alpha_tot(z_source=zp, z_21=z, astro=astro) for zp in z_prime]
     )  # (N_shells, N_freq)
 
     integrand = sfrd_R[:, None] * eps_R
@@ -95,22 +91,20 @@ def J_alpha(
     # same frequency grid as epsilon_alpha_tot
     nu = _NU_GRID
 
-    # Unit conversions
-    Mpc_to_cm = 3.086e24        # cm per Mpc
-    yr_to_s = 3.154e7           # s per yr
-    Msun_to_kg = 1.989e30       # kg per Msun
-
     # J_alpha has units M_sun yr^-1 Mpc^-2 kg^-1 from the integral
     # multiply by:
     #   Msun_to_kg   (M_sun -> kg, cancels with kg^-1 in epsilon)
     #   / yr_to_s    (yr^-1 -> s^-1)
     #   / Mpc_to_cm^2 (Mpc^-2 -> cm^-2)
-    #   / (4*pi)     already divided, but need sr^-1 -- already there from 1/4pi
-    #   the Hz^-1 comes from the fact that epsilon is per unit frequency implicitly
+    #   / (4*pi)     already divided, but need sr^-1 -- 
+    #               already there from 1/4pi
+    #   the Hz^-1 comes from the fact that
+    #   epsilon is per unit frequency implicitly
 
-    unit_factor = Msun_to_kg / yr_to_s / Mpc_to_cm**2
+    unit_factor = conv.Msun_to_kg / conv.yr_to_s / conv.Mpc_to_cm**2
 
-    # integral is over comoving shells, so we need to convert the SFRD from comoving to physical units
+    # integral is over comoving shells, so we need to convert the 
+    # SFRD from comoving to physical units
     # and the (1+z)^2 factor accounts for this
     
     return nu, (1 + z) ** 2 / (4 * jnp.pi) * jnp.trapezoid(
@@ -121,8 +115,8 @@ def J_alpha(
 def calculate_epsilon_alpha_tot(
     z_source: float,  # redshift of the source (shell R where the photon was emitted)
     z_21: float,  # redshift of the 21cm signal observation
+    astro: astrophysics,
     n_max: int = 23,
-    **sed_kwargs,
 ) -> jnp.ndarray:
     """Calculate total epsilon_alpha^tot including recycling - Eq. 25.
 
@@ -131,7 +125,7 @@ def calculate_epsilon_alpha_tot(
 
     Args:
         nu_prime: Redshifted frequency nu'[1 + z'(R)] / [1 + z]
-        z: Current source redshift
+        z_source: Current source redshift
         z_obs: Observer redshift
         n_max: Maximum Lyman level to consider
         N_alpha: Total photon number normalization
@@ -145,7 +139,7 @@ def calculate_epsilon_alpha_tot(
     nu_prime = nu * (1 + z_source) / (1 + z_21)
     # Get intrinsic spectrum (unnormalized)
     epsilon_intrinsic = calculate_epsilon_alpha_intrinsic(
-        nu_prime, **sed_kwargs
+        nu_prime, astro
     )
 
     ns = jnp.arange(2, n_max + 1)  # shape (n_max - 1,)
@@ -160,12 +154,9 @@ def calculate_epsilon_alpha_tot(
 
     return jnp.where(z_source < z_21, jnp.zeros_like(nu), epsilon_tot)
 
-
 def calculate_epsilon_alpha_intrinsic(
     nu: jnp.ndarray,
-    alpha_low: float = 0.14,
-    alpha_high: float = -8.0,
-    N_alpha: float = 9690.0,
+    astro: astrophysics,
 ) -> jnp.ndarray:
     """Calculate intrinsic stellar emissivity epsilon_alpha(nu) - Eq. 26.
 
@@ -178,11 +169,7 @@ def calculate_epsilon_alpha_intrinsic(
 
     Args:
         nu: Frequency array [Hz]
-        alpha_low: Power law index below Ly-beta (positive, spectrum rises)
-        alpha_high: Power law index above Ly-beta (negative, steep cutoff)
-        N_alpha: Total photon number normalization (arbitrary units)
-            - defined such that integrating epsilon_alpha_intrinsic over
-            the Ly-alpha to Lyman-limit band gives N_alpha photons.
+        astro: Astrophysics object (for SED parameters)
 
     Returns:
         Intrinsic emissivity [arbitrary units, will be normalized]
@@ -200,18 +187,18 @@ def calculate_epsilon_alpha_intrinsic(
     #           [(nu_b/nu_beta)^(alpha+1) - (nu_a/nu_beta)^(alpha+1)]
     I_low = (
         nu_beta
-        / (alpha_low + 1)
+        / (astro.alpha_low + 1)
         * (
-            (nu_beta / nu_beta) ** (alpha_low + 1)
-            - (nu_alpha / nu_beta) ** (alpha_low + 1)
+            (nu_beta / nu_beta) ** (astro.alpha_low + 1)
+            - (nu_alpha / nu_beta) ** (astro.alpha_low + 1)
         )
     )
     I_high = (
         nu_beta
-        / (alpha_high + 1)
+        / (astro.alpha_high + 1)
         * (
-            (nu_limit / nu_beta) ** (alpha_high + 1)
-            - (nu_beta / nu_beta) ** (alpha_high + 1)
+            (nu_limit / nu_beta) ** (astro.alpha_high + 1)
+            - (nu_beta / nu_beta) ** (astro.alpha_high + 1)
         )
     )
 
@@ -228,13 +215,13 @@ def calculate_epsilon_alpha_intrinsic(
         jnp.where(
             nu < nu_beta,
             # Region 1: Ly-alpha to Ly-beta (rising)
-            A_low * (nu / nu_beta) ** alpha_low,
+            A_low * (nu / nu_beta) ** astro.alpha_low,
             # Region 2: Ly-beta to Lyman limit (steep drop)
-            A_high * (nu / nu_beta) ** alpha_high,
+            A_high * (nu / nu_beta) ** astro.alpha_high,
         ),
     )
 
-    return epsilon * N_alpha / mu_b  # Scale to total photon number
+    return epsilon * astro.N_alpha / mu_b  # Scale to total photon number
 
 
 def get_f_rec(n: int) -> float:

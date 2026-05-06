@@ -24,10 +24,19 @@ astrophysics = namedtuple(
         "alpha_star",  # power-law index for star formation efficiency
         "beta_star",  # power-law index for star formation efficiency
         "M_pivot",  # pivot mass for star formation efficiency
+        "L40", # X-ray luminosity per unit SFR in units of 10^40 erg/s/(Msun/yr)
+        "alpha_x", # X-ray spectral index (negative for typical spectra)
+        "nu_0", # Reference frequency for X-ray normalization (0.5 keV in keV)
+        "alpha_low", # power law index for Lya emissivity below the Lyman limit
+        "alpha_high", # power law index for Lya emissivity above the Lyman limit
+        "N_alpha", # total number of Lyman-alpha photons produced per baryon in stars
         "f_esc", # escape fraction of ionizing photons
         "N_ion", # number of ionizing photons produced per baryon in stars
     ],
-    defaults=(0.1, 0.5, -0.5, 3e11, 0.15, 5000.0),
+    defaults=(0.1, 0.5, -0.5, 3e11, 
+              1.0, -1.0, 0.5,
+                0.14, -8.0, 9690.0,
+              0.15, 5000.0),
 )
 
 
@@ -61,6 +70,9 @@ conversion_factors = namedtuple(
     "conversion_factors",
     [
         "keV_to_Hz",  # Conversion factor from keV to Hz
+        "Mpc_to_cm",  # Conversion factor from Mpc to cm
+        "Msun_to_kg",  # Conversion factor from solar masses to kg
+        "yr_to_s",  # Conversion factor from years to seconds
     ],
 )
 
@@ -89,4 +101,7 @@ const = constants(
 
 conv = conversion_factors(
     keV_to_Hz=2.418e17,  # Hz/keV
+    Mpc_to_cm=3.086e24,  # cm/Mpc
+    Msun_to_kg=1.989e30,  # kg/Msun
+    yr_to_s=3.154e7,  # s/yr
 )

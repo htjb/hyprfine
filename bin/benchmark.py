@@ -25,25 +25,9 @@ if len(sys.argv) > 1 and sys.argv[1] == "--no-gpu":
 # ---------------------------------------------------------------------------
 # Planck 2018 cosmology
 # ---------------------------------------------------------------------------
-planck = cosmology(
-    H0=67.32,
-    Omega_m=0.3158,
-    Omega_b=0.0494,
-    Omega_c=0.2664,
-    Omega_r=9e-5,
-    Y_He=0.2454,
-    ns=0.96605,
-    ln1010As=3.0448,
-)
+planck = cosmology()
 
-astro = astrophysics(
-    epsilon=0.1,
-    alpha_star=0.5,
-    beta_star=-0.5,
-    M_pivot=3e11,
-    f_esc=0.15,
-    N_ion=5000.0,
-)
+astro = astrophysics()
 
 f_grid = jnp.linspace(5.0, 300.0, 500)  # MHz
 

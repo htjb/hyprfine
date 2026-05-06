@@ -6,7 +6,6 @@ import jax.numpy as jnp
 from hyprfine.parameters import cosmology, astrophysics
 from hyprfine.utils.cosmology import growth_factor, rhom, sigma, sigma0
 
-
 def fstar(
     astro: astrophysics,
     M_h: jnp.ndarray,

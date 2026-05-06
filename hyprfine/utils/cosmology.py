@@ -6,6 +6,21 @@ import jax.numpy as jnp
 from hyprfine.matterpower import matterpowerspec
 from hyprfine.parameters import const, cosmology
 
+@jax.jit
+def chi_single(z_s: float, z: float, cosmo: cosmology) -> jnp.ndarray:
+    """Calculate the comoving distance chi(z_s) from redshift z to z_s.
+
+    Args:
+        z_s: Source redshift.
+        z: Observation redshift.
+        cosmo: Cosmology object.
+
+    Returns:
+        chi: Comoving distance from z to z_s in Mpc.
+    """
+    z_int = jnp.linspace(z, z_s, 500)
+    integrand = (const.c / 1e3) / H(z_int, cosmo) # Gives Mpc
+    return jnp.trapezoid(integrand, z_int)
 
 @jax.jit
 def H(z: float, cosmo: cosmology) -> float:
