@@ -45,52 +45,48 @@ def generate_signal(
     Returns:
         T21_values: 21cm brightness temperature values over the frequency grid.
     """
-    try:
-        z_grid = 1420.4 / (f_grid) - 1
-        xe, T_gas = call_hyrec_emulator(
-            z_grid=z_grid,
-            H0=cosmo.H0,
-            omb=cosmo.Omega_b,
-            omc=cosmo.Omega_c,
-            yhe=cosmo.Y_He,
-        )
-        if astro is None:
-            xalpha_values = jnp.zeros_like(z_grid)
-        else:
-            xalpha_values = vmappedxalpha(z_grid, cosmo, astro, Tcmb(0))
+    z_grid = 1420.4 / (f_grid) - 1
+    xe, T_gas = call_hyrec_emulator(
+        z_grid=z_grid,
+        H0=cosmo.H0,
+        omb=cosmo.Omega_b,
+        omc=cosmo.Omega_c,
+        yhe=cosmo.Y_He,
+    )
+    if astro is None:
+        xalpha_values = jnp.zeros_like(z_grid)
+    else:
+        xalpha_values = vmappedxalpha(z_grid, cosmo, astro, Tcmb(0))
 
-        T_gas_z50 = jnp.interp(50, z_grid[::-1], T_gas[::-1])
-        xe_z50 = jnp.interp(50, z_grid[::-1], xe[::-1])
-        
-        z_out, evolved_Tk, evolved_xe = evolve_igm(
-            z_start=50,
-            z_end=z_grid[-1],
-            Tk_init=T_gas_z50,
-            xe_init=xe_z50,
-            cosmo=cosmo,
-            astro=astro,
-        )
-        T_gas_beyond_z50 = jnp.interp(
-            z_grid[z_grid <= 50], z_out[::-1], evolved_Tk[::-1]
-        )
-        T_gas = jnp.concat([T_gas[z_grid >= 50], T_gas_beyond_z50])
+    T_gas_z50 = jnp.interp(50, z_grid[::-1], T_gas[::-1])
+    xe_z50 = jnp.interp(50, z_grid[::-1], xe[::-1])
+    
+    z_out, evolved_Tk, evolved_xe = evolve_igm(
+        z_start=50,
+        z_end=z_grid[-1],
+        Tk_init=T_gas_z50,
+        xe_init=xe_z50,
+        cosmo=cosmo,
+        astro=astro,
+    )
+    T_gas_beyond_z50 = jnp.interp(
+        z_grid[z_grid <= 50], z_out[::-1], evolved_Tk[::-1]
+    )
+    T_gas = jnp.concat([T_gas[z_grid >= 50], T_gas_beyond_z50])
 
-        xe_beyond_z50 = jnp.interp(
-            z_grid[z_grid <= 50], z_out[::-1], evolved_xe[::-1]
-        )
-        xe = jnp.concat([xe[z_grid >= 50], xe_beyond_z50])
+    xe_beyond_z50 = jnp.interp(
+        z_grid[z_grid <= 50], z_out[::-1], evolved_xe[::-1]
+    )
+    xe = jnp.concat([xe[z_grid >= 50], xe_beyond_z50])
 
-        xc_values = vmappedxc(z_grid, xe, T_gas, cosmo)
+    xc_values = vmappedxc(z_grid, xe, T_gas, cosmo)
 
-        T_cmb = Tcmb(z_grid)
+    T_cmb = Tcmb(z_grid)
 
-        T_s = Ts(T_gas, T_cmb, xc_values, xalpha_values)
+    T_s = Ts(T_gas, T_cmb, xc_values, xalpha_values)
 
-        T21_values = vmappedT21(z_grid, T_gas, T_cmb, T_s, xe, cosmo)
-        if detailed_output:
-            return T21_values, xe, T_gas, xc_values, T_s, T_cmb, xalpha_values
-        else:
-            return T21_values
-    except Exception as e:
-       print(f"Error generating signal for sample {cosmo}: {e}")
-       return jnp.full_like(f_grid, jnp.nan)
+    T21_values = vmappedT21(z_grid, T_gas, T_cmb, T_s, xe, cosmo)
+    if detailed_output:
+        return T21_values, xe, T_gas, xc_values, T_s, T_cmb, xalpha_values
+    else:
+        return T21_values
