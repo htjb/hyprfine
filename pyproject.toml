@@ -16,7 +16,8 @@ dependencies = [
     "jax",
     "jaxlib",
     "numpy",
-    "astroemu", 
+    "astroemu",
+    "diffrax"
 ]
 
 classifiers=[
