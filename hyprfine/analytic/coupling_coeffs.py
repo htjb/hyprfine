@@ -48,7 +48,7 @@ def xc(
     """
     nH = n_H_tot(z, cosmo)
 
-    xc = (const.Tstar * kappa(z, Tk, xe) * nH) / (
+    xc = (const.Tstar * kappa(Tk, xe) * nH) / (
         const.A10 * const.Tcmb0 * (1 + z)
     )
 
@@ -56,11 +56,10 @@ def xc(
 
 
 @jax.jit
-def kappa(z: int, Tk: jnp.ndarray, xe: jnp.ndarray) -> jnp.ndarray:
+def kappa(Tk: jnp.ndarray, xe: jnp.ndarray) -> jnp.ndarray:
     """Calculate the collisional coupling coefficient kappa.
 
     Args:
-        z: Redshift.
         Tk: Kinetic temperature in Kelvin.
         xe: Free electron fraction.
 
