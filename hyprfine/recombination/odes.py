@@ -9,15 +9,18 @@ from hyprfine.analytic.ionization import nion_dot
 from hyprfine.parameters import astrophysics, const, cosmology
 from hyprfine.utils.cosmology import H, n_H_tot
 
+
 @jax.jit
 def f_heat_SSvS(xe):
     xe = jnp.clip(xe, 0.0, 1.0)
     return 0.9971 * (1 - (1 - xe**0.2663) ** 1.3163)
 
+
 @jax.jit
 def f_ion_SSvS(xe):
     xe = jnp.clip(xe, 0.0, 1.0)
     return 0.3908 * (1 - xe**0.4092) ** 1.7592
+
 
 @jax.jit
 def dt_dz(z, cosmo):
@@ -54,9 +57,7 @@ def dTk_dz(z, Tk, xe, cosmo, Q_X, niondot):
     # X-ray heating [K/s]
     nH_cm3 = n_H_tot(z, cosmo) * 1e-6
     xray_rate = Q_X / (
-        1.5 * const.k_b_cgs
-        * (1 + xe + cosmo.Y_He / 4)
-        * nH_cm3
+        1.5 * const.k_b_cgs * (1 + xe + cosmo.Y_He / 4) * nH_cm3
     )
 
     # # not sure about thsi term
@@ -69,6 +70,7 @@ def dTk_dz(z, Tk, xe, cosmo, Q_X, niondot):
     # )
 
     return 2 * Tk / (1 + z) + dtdz * (compton_rate + xray_rate)
+
 
 @jax.jit
 def dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot):
@@ -92,15 +94,16 @@ def dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot):
     alpha_B = 2.6e-13 * (Tk / 1e4) ** (-0.76)  # cm^3/s
 
     # clumping factor
-    C_HII = jnp.maximum(1.0, 2.9*((1 + z) / 6) ** (-1.1))
+    C_HII = jnp.maximum(1.0, 2.9 * ((1 + z) / 6) ** (-1.1))
 
     recomb = C_HII * alpha_B * nH_cm3 * xe**2
     xray_ion = Gamma_X * (1 - xe)
-    uv_ion = (niondot / nH_cm3)
+    uv_ion = niondot / nH_cm3
 
     dxe = dtdz * (-recomb + xray_ion + uv_ion)
     # Prevent xe from exceeding 1: clamp derivative to non-negative when xe >= 1
     return jnp.where(xe >= 1.0, jnp.maximum(0.0, dxe), dxe)
+
 
 @jax.jit
 def evolve_igm(
@@ -137,14 +140,18 @@ def evolve_igm(
     jx_grid = jax.vmap(lambda z: J_X(z, cosmo, astro)[1])(z_grid)
     jx_grid_T = jx_grid.T
 
+    # Precompute nion
+    niondot_grid = jax.vmap(lambda z: nion_dot(z, cosmo, astro))(z_grid)
+
     # Precompute constants
     h_nu_HI = const.h_planck_cgs * 3.288e15  # erg
     sig = sigma_X(nu)
 
     def interp_jx(j_nu, z):
         return jnp.interp(z, z_grid, j_nu)
-    
+
     vmapped_interp_jx = jax.vmap(interp_jx, in_axes=(0, None))
+
     @jax.jit
     def vector_field(z, state, args):
         Tk, xe = state
@@ -161,23 +168,34 @@ def evolve_igm(
         f_ion = f_ion_SSvS(xe)
 
         # X-ray heating rate per unit volume [erg/s/cm^3]
-        Q_X = 4 * jnp.pi * jnp.trapezoid(
-            jx * nH_cm3 * sig * f_heat * (1 - h_nu_HI / (const.h_planck_cgs * nu)),
-            nu,
+        Q_X = (
+            4
+            * jnp.pi
+            * jnp.trapezoid(
+                jx
+                * nH_cm3
+                * sig
+                * f_heat
+                * (1 - h_nu_HI / (const.h_planck_cgs * nu)),
+                nu,
+            )
         )
 
         # X-ray ionization rate per H atom [s^-1]
-        Gamma_X = 4 * jnp.pi * f_ion * jnp.trapezoid(
-            jx * sig / (const.h_planck_cgs * nu), nu
+        Gamma_X = (
+            4
+            * jnp.pi
+            * f_ion
+            * jnp.trapezoid(jx * sig / (const.h_planck_cgs * nu), nu)
         )
 
-        niondot = nion_dot(z, cosmo, astro)
+        niondot = jnp.interp(z, z_grid, niondot_grid)
 
         return (
             dTk_dz(z, Tk, xe, cosmo, Q_X, niondot),
             dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot),
         )
-    
+
     term = diffrax.ODETerm(vector_field)
     solver = diffrax.Kvaerno5()
 
