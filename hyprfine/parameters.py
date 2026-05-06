@@ -14,6 +14,7 @@ cosmology = namedtuple(
         "ns",  # scalar spectral index of primordial fluctuations
         "ln1010As",  # amplitude of the primordial power spectrum
     ],
+    defaults=(67.36, 0.315, 0.049, 0.266, 9e-5, 0.245, 0.97, 3.044),
 )
 
 astrophysics = namedtuple(
@@ -26,6 +27,7 @@ astrophysics = namedtuple(
         "f_esc", # escape fraction of ionizing photons
         "N_ion", # number of ionizing photons produced per baryon in stars
     ],
+    defaults=(0.1, 0.5, -0.5, 3e11, 0.15, 5000.0),
 )
 
 
