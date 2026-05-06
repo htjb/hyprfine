@@ -10,7 +10,7 @@ from hyprfine.parameters import astrophysics, cosmology
 from hyprfine.recombination.emulator import call_hyrec_emulator
 from hyprfine.recombination.odes import evolve_igm
 
-xcvmap = jax.vmap(xc, in_axes=(0, 0, 0, None))
+vmappedxc = jax.vmap(xc, in_axes=(0, 0, 0, None))
 vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, 0, None))
 vmappedxalpha = jax.vmap(x_alpha, in_axes=(0, None, None, None))
 
@@ -80,7 +80,7 @@ def generate_signal(
         )
         xe = jnp.concat([xe[z_grid >= 50], xe_beyond_z50])
 
-        xc_values = xcvmap(z_grid, xe, T_gas, cosmo)
+        xc_values = vmappedxc(z_grid, xe, T_gas, cosmo)
 
         T_cmb = Tcmb(z_grid)
 

@@ -1,9 +1,9 @@
+import jax
 import jax.numpy as jnp
 
 from hyprfine.analytic.sfrd import mean_sfrd
-from hyprfine.utils.cosmology import n_H_tot
 
-
+@jax.jit
 def nion_dot(z, cosmo, astro):
     mu_b_Msun = 1.22 * 1.67352e-27 / 1.989e30
     yr_to_s = 3.154e7

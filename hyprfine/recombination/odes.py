@@ -81,6 +81,7 @@ def dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot):
         cosmo: Cosmology object.
         Gamma_X: X-ray ionization rate per H atom [s^-1].
         niondot: Ionization rate per H atom [s^-1].
+
     Returns:
         dxe/dz.
     """

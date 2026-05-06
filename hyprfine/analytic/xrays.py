@@ -50,14 +50,19 @@ def J_X(
     sfrd_R = vmapped_mean_sfrd(z_prime, Mh, astro, cosmo)  # shape (N_shells,)
 
     # X-ray emissivity at each shell (already includes attenuation)
-    eps_R = jnp.array(
-        [
-            calculate_epsilon_x_tot(
-                z_source=zp, z_21=z, cosmo=cosmo, astro=astro
-            )
-            for zp in z_prime
-        ]
-    )  # shape (N_shells, N_freq)
+    # eps_R = jnp.array(
+    #     [
+    #         calculate_epsilon_x_tot(
+    #             z_source=zp, z_21=z, cosmo=cosmo, astro=astro
+    #         )
+    #         for zp in z_prime
+    #     ]
+    # )  # shape (N_shells, N_freq)
+    eps_R = jax.vmap(
+        lambda zp: calculate_epsilon_x_tot(
+            z_source=zp, z_21=z, cosmo=cosmo, astro=astro
+        )
+    )(z_prime)  # shape (N_shells, N_freq)
 
     integrand = sfrd_R[:, None] * eps_R
 
@@ -120,7 +125,9 @@ vmapped_calculate_epsilon_x_tot = jax.vmap(
 
 
 @jax.jit
-def calculate_epsilon_x_intrinsic(nu: jnp.ndarray, astro: astrophysics):
+def calculate_epsilon_x_intrinsic(
+    nu: jnp.ndarray, astro: astrophysics
+) -> jnp.ndarray:
     """Calculate intrinsic X-ray emissivity epsilon_x(nu).
 
     This is a power law with index alpha_x, normalized such that the
@@ -198,16 +205,6 @@ def tau_X(
     Returns:
         Optical depth (dimensionless)
     """
-    Omega_L = 1.0 - cosmo.Omega_m
-
-    def H(z):
-        return (
-            cosmo.H0
-            * 1e3
-            / const.Mpc
-            * jnp.sqrt(cosmo.Omega_m * (1 + z) ** 3 + Omega_L)
-        )  # s^-1
-
     z_int = jnp.linspace(z_obs, z_source, 200)
 
     # Frequency at each redshift along the path
@@ -220,7 +217,7 @@ def tau_X(
     sig = sigma_X(nu_z)
 
     # integrand: n_H * sigma / H(z) / (1+z), integrated over dz
-    integrand = nH * sig * (const.c * 1e2) / (H(z_int) * (1 + z_int))
+    integrand = nH * sig * (const.c * 1e2) / (H(z_int, cosmo) * (1 + z_int))
 
     return jnp.trapezoid(integrand, z_int)
 

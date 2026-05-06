@@ -2,7 +2,7 @@
 
 import warnings
 from pathlib import Path
-
+import jax
 import jax.numpy as jnp
 from astroemu.network import mlp
 from astroemu.serialisation import load
@@ -31,7 +31,7 @@ def _load_emulator(label: str) -> dict:
         _cache[label] = load(str(path))
     return _cache[label]
 
-
+@jax.jit
 def call_hyrec_emulator(
     z_grid: jnp.ndarray,
     H0: float,

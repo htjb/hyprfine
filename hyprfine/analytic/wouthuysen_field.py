@@ -82,9 +82,12 @@ def J_alpha(
 
     # SFRD and epsilon at each shell
     sfrd_R = vmapped_mean_sfrd(z_prime, Mh, astro, cosmo) # comoving Msun/yr/Mpc^3 at each shell
-    eps_R = jnp.array(
-        [calculate_epsilon_alpha_tot(z_source=zp, z_21=z, astro=astro) for zp in z_prime]
-    )  # (N_shells, N_freq)
+    #eps_R = jnp.array(
+    #    [calculate_epsilon_alpha_tot(z_source=zp, z_21=z, astro=astro) for zp in z_prime]
+    #)  # (N_shells, N_freq)
+    eps_R = jax.vmap(
+        lambda zp: calculate_epsilon_alpha_tot(z_source=zp, z_21=z, astro=astro)
+    )(z_prime)  # (N_shells, N_freq)
 
     integrand = sfrd_R[:, None] * eps_R
 
@@ -111,7 +114,7 @@ def J_alpha(
         integrand, R, axis=0
     ) * unit_factor  # (N_freq,)
 
-
+@jax.jit
 def calculate_epsilon_alpha_tot(
     z_source: float,  # redshift of the source (shell R where the photon was emitted)
     z_21: float,  # redshift of the 21cm signal observation
@@ -124,12 +127,10 @@ def calculate_epsilon_alpha_tot(
     can redshift into Ly-alpha at the observer's location.
 
     Args:
-        nu_prime: Redshifted frequency nu'[1 + z'(R)] / [1 + z]
         z_source: Current source redshift
-        z_obs: Observer redshift
+        z_21: Observer redshift
+        astro: Astrophysics object (for SED parameters)
         n_max: Maximum Lyman level to consider
-        N_alpha: Total photon number normalization
-        **sed_kwargs: Arguments for epsilon_alpha_intrinsic
 
     Returns:
         Total effective emissivity
@@ -154,6 +155,7 @@ def calculate_epsilon_alpha_tot(
 
     return jnp.where(z_source < z_21, jnp.zeros_like(nu), epsilon_tot)
 
+@jax.jit
 def calculate_epsilon_alpha_intrinsic(
     nu: jnp.ndarray,
     astro: astrophysics,

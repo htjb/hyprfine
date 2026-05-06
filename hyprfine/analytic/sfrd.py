@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from hyprfine.parameters import cosmology, astrophysics
 from hyprfine.utils.cosmology import growth_factor, rhom, sigma, sigma0
 
+@jax.jit
 def fstar(
     astro: astrophysics,
     M_h: jnp.ndarray,
@@ -29,6 +30,7 @@ def fstar(
     )
     return f_star
 
+@jax.jit
 def dmh_dt(M_z: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Calculate the halo mass accretion rate.
 
@@ -71,6 +73,7 @@ def dmh_dt(M_z: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
             * f * ((1 + z) - a) * E_z)
 
 
+@jax.jit
 def dmstar_dt(
     m_h: jnp.ndarray,
     z: jnp.ndarray,
@@ -93,7 +96,7 @@ def dmstar_dt(
     dm_h_dt = dmh_dt(m_h, z, cosmo)
     return f_star * f_b * dm_h_dt
 
-
+@jax.jit
 def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     """Sheth-Tormann halo mass function.
 
@@ -119,7 +122,7 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     rhomatter = rhom(0, cosmo)
     return fnu * (rhomatter / Mh**2) * jnp.abs(dln_sigma_dln_M)
 
-
+@jax.jit
 def mean_sfrd(
     z: jnp.ndarray,
     Mh: jnp.ndarray,
