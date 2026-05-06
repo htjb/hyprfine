@@ -3,9 +3,10 @@
 import jax
 from jax import numpy as jnp
 
-from hyprfine.parameters import const, cosmology, astrophysics
 from hyprfine.analytic.wouthuysen_field import J_alpha
+from hyprfine.parameters import astrophysics, const, cosmology
 from hyprfine.utils.cosmology import n_H_tot
+
 
 @jax.jit
 def x_alpha(
