@@ -30,32 +30,45 @@ def fstar(
     )
     return f_star
 
-
-def dmh_dt(M_h: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
+def dmh_dt(M0: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Calculate the halo mass accretion rate.
 
-    Approximation from Fakhouri et al. 2010. Only valid
-    for Millenium cosmology.
+    Approximation from Correa et al. 2015, which is more accurate than Fakhouri
+    et al. 2010 and valid for a wider range of cosmologies.
 
     Args:
-        M_h: Halo mass in solar masses.
+        M0: Halo mass in solar masses at redshift z.
         z: Redshift.
         cosmo: cosmology parameters.
-
+    
     Returns:
         dm_h/dt: Halo mass accretion rate in solar masses per year.
     """
-    omega_L = 1 - cosmo.Omega_m
-    return (
-        46.1
-        * (M_h / 1e12) ** 1.1
-        * (1 + 1.11 * z)
-        * jnp.sqrt(
-            cosmo.Omega_m * (1 + z) ** 3
-            + omega_L
-            + cosmo.Omega_r * (1 + z) ** 4
-        )
-    )
+    # Step 1: get z_f and q from M0 (eqs B2, B3)
+    log10_M0 = jnp.log10(M0)
+    z_f = -0.0064 * log10_M0**2 + 0.0237 * log10_M0 + 1.8837
+    q = 4.137 * z_f**(-0.9476)
+
+    # Step 2: f(M0) from sigma (eq B4)
+    R0 = (3 * M0 / (4 * jnp.pi * rhom(0, cosmo))) ** (1/3)
+    Rq = (3 * (M0 / q) / (4 * jnp.pi * rhom(0, cosmo))) ** (1/3)
+    S0 = sigma0(R0, cosmo)**2
+    Sq = sigma0(Rq, cosmo)**2
+    f = 1.0 / jnp.sqrt(Sq - S0)
+
+    # Step 3: a from growth factor derivative at z=0 (eq B6)
+    dDdz_0 = jax.grad(lambda z: growth_factor(z, cosmo))(0.0)
+    a = 1.686 * jnp.sqrt(2.0 / jnp.pi) * dDdz_0 + 1.0
+
+    # Step 4: dM/dt (Correa+2015 eq on p.4)
+    # M0 here is the halo mass at redshift z (used directly as M(z) in the
+    # formula). The M(z) evolution step is skipped: the formula requires M(z)
+    # evaluated at the observed redshift, which is just M0 itself.
+    h = cosmo.H0 / 100.0
+    E_z = jnp.sqrt(cosmo.Omega_m * (1 + z)**3 + (1 - cosmo.Omega_m))
+
+    return (71.6 * (M0 / 1e12) * (h / 0.7)
+            * f * ((1 + z) - a) * E_z)
 
 
 def dmstar_dt(
