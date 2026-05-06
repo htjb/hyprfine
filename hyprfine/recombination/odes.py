@@ -4,33 +4,61 @@ import diffrax
 import jax
 import jax.numpy as jnp
 
-from hyprfine.analytic.xrays import J_X, sigma_X, _NU_X_GRID
 from hyprfine.analytic.ionization import nion_dot
+from hyprfine.analytic.xrays import _NU_X_GRID, J_X, sigma_X
 from hyprfine.parameters import astrophysics, const, cosmology
 from hyprfine.utils.cosmology import H, n_H_tot
 
 
 @jax.jit
-def f_heat_SSvS(xe):
-    xe = jnp.clip(xe, 0.0, 1.0)
+def f_heat_SSvS(xe: float) -> float:
+    """Fraction of X-ray energy that goes into heating, as a function of xe.
+
+    Based on the fitting formula from Shull & van Steenberg (1985), as given
+    in Furlanetto & Stoever (2010) and implemented in 21cmFAST.
+
+    Args:
+        xe: Ionization fraction.
+
+    Returns:
+        Fraction of X-ray energy that goes into heating.
+    """
     return 0.9971 * (1 - (1 - xe**0.2663) ** 1.3163)
 
 
 @jax.jit
-def f_ion_SSvS(xe):
-    xe = jnp.clip(xe, 0.0, 1.0)
+def f_ion_SSvS(xe: float) -> float:
+    """Fraction of X-ray energy that goes into ionization, as a function of xe.
+
+    Based on the fitting formula from Shull & van Steenberg (1985), as given
+    in Furlanetto & Stoever (2010) and implemented in 21cmFAST.
+
+    Args:
+        xe: Ionization fraction.
+
+    Returns:
+        Fraction of X-ray energy that goes into ionization.
+    """
     return 0.3908 * (1 - xe**0.4092) ** 1.7592
 
 
 @jax.jit
-def dt_dz(z, cosmo):
+def dt_dz(z: float, cosmo: cosmology) -> float:
     """dt/dz in seconds per unit redshift."""
     H_z = H(z, cosmo) * 1e3 / const.Mpc  # s^-1
     return -1.0 / (H_z * (1 + z))
 
 
 @jax.jit
-def dTk_dz(z, Tk, xe, cosmo, Q_X, nH_cm3, dtdz):
+def dTk_dz(
+    z: float,
+    Tk: float,
+    xe: float,
+    cosmo: cosmology,
+    Q_X: float,
+    nH_cm3: float,
+    dtdz: float,
+) -> float:
     """dT_k/dz including adiabatic cooling, Compton heating, X-ray heating.
 
     Args:
@@ -39,6 +67,8 @@ def dTk_dz(z, Tk, xe, cosmo, Q_X, nH_cm3, dtdz):
         xe: Ionization fraction.
         cosmo: Cosmology object.
         Q_X: X-ray heating rate per unit volume [erg/s/cm^3].
+        nH_cm3: Hydrogen number density in cm^-3.]
+        dtdz: dt/dz in seconds per unit redshift.
 
     Returns:
         dTk/dz in K.
@@ -61,7 +91,16 @@ def dTk_dz(z, Tk, xe, cosmo, Q_X, nH_cm3, dtdz):
 
 
 @jax.jit
-def dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot, nH_cm3, dtdz):
+def dxe_dz(
+    z: float,
+    Tk: float,
+    xe: float,
+    cosmo: cosmology,
+    Gamma_X: float,
+    niondot: float,
+    nH_cm3: float,
+    dtdz: float,
+) -> float:
     """dx_e/dz including recombination and X-ray secondary ionization.
 
     Args:
@@ -71,6 +110,8 @@ def dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot, nH_cm3, dtdz):
         cosmo: Cosmology object.
         Gamma_X: X-ray ionization rate per H atom [s^-1].
         niondot: Ionization rate per H atom [s^-1].
+        nH_cm3: Hydrogen number density in cm^-3.
+        dtdz: dt/dz in seconds per unit redshift.
 
     Returns:
         dxe/dz.
@@ -99,7 +140,7 @@ def evolve_igm(
     cosmo: cosmology,
     astro: astrophysics,
     N_zgrid: int = 100,
-):
+) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Evolve T_k and x_e from z_start to z_end using diffrax.
 
     Integrates directly in redshift z following the approach of
@@ -138,9 +179,15 @@ def evolve_igm(
     vmapped_interp_jx = jax.vmap(interp_jx, in_axes=(0, None))
 
     @jax.jit
-    def vector_field(z, state, args):
+    def vector_field(
+        z: float,
+        state: tuple[float, float],
+        args: tuple[cosmology, astrophysics],
+    ) -> tuple[float, float]:
         Tk, xe = state
         cosmo, astro = args
+
+        xe = jnp.clip(xe, 0.0, 1.0)  # Ensure xe stays in physical range
 
         # Interpolate J_X at current z
         jx = vmapped_interp_jx(jx_grid_T, z)
