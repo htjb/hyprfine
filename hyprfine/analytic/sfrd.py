@@ -30,14 +30,14 @@ def fstar(
     )
     return f_star
 
-def dmh_dt(M0: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
+def dmh_dt(M_z: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Calculate the halo mass accretion rate.
 
     Approximation from Correa et al. 2015, which is more accurate than Fakhouri
     et al. 2010 and valid for a wider range of cosmologies.
 
     Args:
-        M0: Halo mass in solar masses at redshift z.
+        M_z: Halo mass in solar masses at redshift z.
         z: Redshift.
         cosmo: cosmology parameters.
     
@@ -45,13 +45,13 @@ def dmh_dt(M0: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
         dm_h/dt: Halo mass accretion rate in solar masses per year.
     """
     # Step 1: get z_f and q from M0 (eqs B2, B3)
-    log10_M0 = jnp.log10(M0)
-    z_f = -0.0064 * log10_M0**2 + 0.0237 * log10_M0 + 1.8837
+    log10_M_z = jnp.log10(M_z)
+    z_f = -0.0064 * log10_M_z**2 + 0.0237 * log10_M_z + 1.8837
     q = 4.137 * z_f**(-0.9476)
 
     # Step 2: f(M0) from sigma (eq B4)
-    R0 = (3 * M0 / (4 * jnp.pi * rhom(0, cosmo))) ** (1/3)
-    Rq = (3 * (M0 / q) / (4 * jnp.pi * rhom(0, cosmo))) ** (1/3)
+    R0 = (3 * M_z / (4 * jnp.pi * rhom(0, cosmo))) ** (1/3)
+    Rq = (3 * (M_z / q) / (4 * jnp.pi * rhom(0, cosmo))) ** (1/3)
     S0 = sigma0(R0, cosmo)**2
     Sq = sigma0(Rq, cosmo)**2
     f = 1.0 / jnp.sqrt(Sq - S0)
@@ -67,7 +67,7 @@ def dmh_dt(M0: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     h = cosmo.H0 / 100.0
     E_z = jnp.sqrt(cosmo.Omega_m * (1 + z)**3 + (1 - cosmo.Omega_m))
 
-    return (71.6 * (M0 / 1e12) * (h / 0.7)
+    return (71.6 * (M_z / 1e12) * (h / 0.7)
             * f * ((1 + z) - a) * E_z)
 
 
