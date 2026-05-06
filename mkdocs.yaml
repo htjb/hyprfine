@@ -36,3 +36,9 @@ nav:
   - API Reference: api-reference.md
   - Tutorials: tutorials.md
   - HYREC-2 Emulator: hyrec_emulators.md
+  - Modelling the 21cm Signal: 
+      - Global Signal: modelling/intro.md
+      - The Dark Ages: modelling/the-dark_ages.md
+      - Recombination: modelling/recombination.md
+      - Lyman-alpha Flux: modelling/wouthuysen.md
+      - X-ray Heating: modelling/xrays.md
