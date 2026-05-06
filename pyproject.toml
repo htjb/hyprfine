@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hyprfine"
-version = "0.1.1"
+version = "1.0.0"
 description = "hyprfine: Simulation tools for 21cm Cosmology."
 readme = "README.md"
 authors = [

@@ -1,7 +1,7 @@
 # hyprfine
 
 **Authors:** Harry T. J. Bevins <br>
-**Version**: 0.1.1 <br>
+**Version**: 1.0.0 <br>
 **Homepage**: [https://github.com/htjb/hyprfine](https://github.com/htjb/hyprfine)<br>
 **License**: MIT
 
