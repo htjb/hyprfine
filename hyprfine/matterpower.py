@@ -1,11 +1,12 @@
 """Calculate the matter power spectrum."""
 
+import jax
 import jax.numpy as jnp
 from cosmopower_jax.cosmopower_jax import CosmoPowerJAX as CPJ
 
 from hyprfine.parameters import cosmology
 
-
+@jax.jit
 def matterpowerspec(cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     """Calculate the matter power spectrum at redshift z.
 

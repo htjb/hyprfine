@@ -101,7 +101,7 @@ def dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot):
     # Prevent xe from exceeding 1: clamp derivative to non-negative when xe >= 1
     return jnp.where(xe >= 1.0, jnp.maximum(0.0, dxe), dxe)
 
-
+@jax.jit
 def evolve_igm(
     z_start: float,
     z_end: float,
@@ -144,7 +144,7 @@ def evolve_igm(
         return jnp.interp(z, z_grid, j_nu)
     
     vmapped_interp_jx = jax.vmap(interp_jx, in_axes=(0, None))
-
+    @jax.jit
     def vector_field(z, state, args):
         Tk, xe = state
         cosmo, astro = args

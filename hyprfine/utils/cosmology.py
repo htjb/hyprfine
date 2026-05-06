@@ -56,7 +56,7 @@ def n_H_tot(z: int, cosmo: cosmology) -> jnp.ndarray:
     )
     return ((1 - cosmo.Y_He) * rho_bar) / const.m_p
 
-
+@jax.jit
 def rhom(z: int, cosmo: cosmology) -> jnp.ndarray:
     """Mean matter density in M_sun/Mpc^3.
 
@@ -79,7 +79,7 @@ def rhom(z: int, cosmo: cosmology) -> jnp.ndarray:
 
     return rho_bar * conversion_factor  # in M_sun/Mpc^3
 
-
+@jax.jit
 def growth_factor(z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Linear growth factor D(z), normalized to D(0)=1.
 
@@ -114,6 +114,7 @@ def growth_factor(z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     return g(z) / (g(0.0) * (1 + z))
 
 
+@jax.jit
 def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Calculate the variance of the density field.
 
@@ -155,7 +156,7 @@ def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     sigma = jnp.sqrt(sigma_squared)
     return sigma
 
-
+@jax.jit
 def sigma(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     """Calculate the variance of the density field at redshift z.
 
