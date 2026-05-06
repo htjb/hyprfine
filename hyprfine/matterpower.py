@@ -8,8 +8,11 @@ from hyprfine.parameters import cosmology
 
 _CPJ_MPK = CPJ(probe="mpk_lin")
 
+
 @jax.jit
-def matterpowerspec(cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
+def matterpowerspec(
+    cosmo: cosmology, z: jnp.ndarray
+) -> tuple[jnp.ndarray, jnp.ndarray]:
     """Calculate the matter power spectrum at redshift z.
 
     Args:
