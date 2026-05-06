@@ -33,7 +33,8 @@ def fstar(
 def dmh_dt(M_z: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Calculate the halo mass accretion rate.
 
-    Approximation from Correa et al. 2015, which is more accurate than Fakhouri
+    Approximation from Correa et al. 2015 (1409.5228), 
+    which is more accurate than Fakhouri
     et al. 2010 and valid for a wider range of cosmologies.
 
     Args:
