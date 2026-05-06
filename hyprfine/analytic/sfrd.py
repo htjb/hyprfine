@@ -34,6 +34,9 @@ def fstar(
 def dmh_dt(M_h: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Calculate the halo mass accretion rate.
 
+    Approximation from Fakhouri et al. 2010. Only valid
+    for Millenium cosmology.
+
     Args:
         M_h: Halo mass in solar masses.
         z: Redshift.
