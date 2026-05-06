@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 
 from hyprfine.analytic.sfrd import mean_sfrd
-from hyprfine.parameters import astrophysics, const, cosmology, conv
+from hyprfine.parameters import astrophysics, const, conv, cosmology
 from hyprfine.utils.cosmology import chi_single
 
 vmapped_mean_sfrd = jax.vmap(mean_sfrd, in_axes=(0, None, None, None))
@@ -55,7 +55,8 @@ def J_alpha(
     """Calculate the Lyman-alpha flux J_alpha at redshift z.
 
     Implements Eq. 24 of Munoz et al. (2023):
-        J_alpha(z) = (1+z)^2 / (4pi) * integral dR SFRD(R) epsilon_alpha^tot(nu')
+        J_alpha(z) = (1+z)^2 / (4pi) * integral dR SFRD(R) 
+            epsilon_alpha^tot(nu')
 
     Args:
         z: Observation redshift.
@@ -81,12 +82,11 @@ def J_alpha(
     Mh = 10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100)
 
     # SFRD and epsilon at each shell
-    sfrd_R = vmapped_mean_sfrd(z_prime, Mh, astro, cosmo) # comoving Msun/yr/Mpc^3 at each shell
-    #eps_R = jnp.array(
-    #    [calculate_epsilon_alpha_tot(z_source=zp, z_21=z, astro=astro) for zp in z_prime]
-    #)  # (N_shells, N_freq)
+    # comoving Msun/yr/Mpc^3 at each shell
+    sfrd_R = vmapped_mean_sfrd(z_prime, Mh, astro, cosmo)
     eps_R = jax.vmap(
-        lambda zp: calculate_epsilon_alpha_tot(z_source=zp, z_21=z, astro=astro)
+        lambda zp: calculate_epsilon_alpha_tot(
+            z_source=zp, z_21=z, astro=astro)
     )(z_prime)  # (N_shells, N_freq)
 
     integrand = sfrd_R[:, None] * eps_R

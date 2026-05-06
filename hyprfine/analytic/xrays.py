@@ -14,6 +14,7 @@ _NU_X_GRID = jnp.logspace(
     jnp.log10(0.5 * conv.keV_to_Hz), jnp.log10(2.0 * conv.keV_to_Hz), 200
 )
 
+
 @jax.jit
 def J_X(
     z: float,
@@ -71,7 +72,7 @@ def J_X(
 
     # Unit conversions: SFRD in Msun/yr/Mpc^3, epsilon in erg/s/Hz per Msun/yr
     # integral gives erg/s/Hz/Mpc^2, convert to erg/s/Hz/cm^2
-    unit_factor = 1.0 / conv.Mpc_to_cm**2  # Mpc^-2 -> cm^-2 
+    unit_factor = 1.0 / conv.Mpc_to_cm**2  # Mpc^-2 -> cm^-2
 
     # integral is over comoving shells, so we need to convert the SFRD from comoving to physical units
     # and the (1+z)^2 factor accounts for this
@@ -92,9 +93,10 @@ def calculate_epsilon_x_tot(
 
     Args:
         z_source: Source redshift
-        z_obs: Observer redshift
+        z_21: Observer redshift
         cosmo: Cosmology object
         astro: Astrophysics object (for SED parameters)
+
     Returns:
         Attenuated X-ray emissivity, shape (N_freq,)
     """
