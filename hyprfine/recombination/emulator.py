@@ -2,12 +2,15 @@
 
 import warnings
 from pathlib import Path
+
 import jax
 import jax.numpy as jnp
 from astroemu.network import mlp
 from astroemu.serialisation import load
 
-warnings.filterwarnings('ignore', message='.*Returning the config dict under.*')
+warnings.filterwarnings(
+    "ignore", message=".*Returning the config dict under.*"
+)
 
 _DATA_DIR = Path(__file__).parent.parent / "data"
 
@@ -30,6 +33,7 @@ def _load_emulator(label: str) -> dict:
         path = _DATA_DIR / f"hyrec_{label}.astroemu"
         _cache[label] = load(str(path))
     return _cache[label]
+
 
 @jax.jit
 def call_hyrec_emulator(
