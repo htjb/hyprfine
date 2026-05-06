@@ -52,7 +52,7 @@ where = ["."]
 include = ["hyprfine*"]
 
 [tool.setuptools.package-data]
-astroemu = ["data/*"]
+hyprfine = ["data/*"]
 
 [tool.ruff]
 line-length = 79
