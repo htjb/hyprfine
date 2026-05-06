@@ -49,7 +49,7 @@ def J_alpha(
     astro: astrophysics,
     Mmin: float = 1e8,
     Mmax: float = 1e16,
-    N_shells: int = 200,
+    N_shells: int = 50,
     z_max_source: float = 35.0,
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
     """Calculate the Lyman-alpha flux J_alpha at redshift z.
