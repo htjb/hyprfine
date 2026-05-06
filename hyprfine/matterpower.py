@@ -6,6 +6,8 @@ from cosmopower_jax.cosmopower_jax import CosmoPowerJAX as CPJ
 
 from hyprfine.parameters import cosmology
 
+_CPJ_MPK = CPJ(probe="mpk_lin")
+
 @jax.jit
 def matterpowerspec(cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     """Calculate the matter power spectrum at redshift z.
@@ -25,6 +27,5 @@ def matterpowerspec(cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
         "ln10^{10}A_s": jnp.array([cosmo.ln1010As]),
         "z": jnp.array([z]),
     }
-    emulator = CPJ(probe="mpk_lin")
-    emulator_predictions = emulator.predict(cosmo_params)
-    return emulator.modes, emulator_predictions
+    emulator_predictions = _CPJ_MPK.predict(cosmo_params)
+    return _CPJ_MPK.modes, emulator_predictions
