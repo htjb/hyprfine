@@ -3,8 +3,9 @@
 import jax
 import jax.numpy as jnp
 
-from hyprfine.parameters import cosmology, astrophysics
+from hyprfine.parameters import astrophysics, cosmology
 from hyprfine.utils.cosmology import growth_factor, rhom, sigma, sigma0
+
 
 @jax.jit
 def fstar(
@@ -30,11 +31,12 @@ def fstar(
     )
     return f_star
 
+
 @jax.jit
 def dmh_dt(M_z: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Calculate the halo mass accretion rate.
 
-    Approximation from Correa et al. 2015 (1409.5228), 
+    Approximation from Correa et al. 2015 (1409.5228),
     which is more accurate than Fakhouri
     et al. 2010 and valid for a wider range of cosmologies.
 
@@ -42,20 +44,20 @@ def dmh_dt(M_z: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
         M_z: Halo mass in solar masses at redshift z.
         z: Redshift.
         cosmo: cosmology parameters.
-    
+
     Returns:
         dm_h/dt: Halo mass accretion rate in solar masses per year.
     """
     # Step 1: get z_f and q from M0 (eqs B2, B3)
     log10_M_z = jnp.log10(M_z)
     z_f = -0.0064 * log10_M_z**2 + 0.0237 * log10_M_z + 1.8837
-    q = 4.137 * z_f**(-0.9476)
+    q = 4.137 * z_f ** (-0.9476)
 
     # Step 2: f(M0) from sigma (eq B4)
-    R0 = (3 * M_z / (4 * jnp.pi * rhom(0, cosmo))) ** (1/3)
-    Rq = (3 * (M_z / q) / (4 * jnp.pi * rhom(0, cosmo))) ** (1/3)
-    S0 = sigma0(R0, cosmo)**2
-    Sq = sigma0(Rq, cosmo)**2
+    R0 = (3 * M_z / (4 * jnp.pi * rhom(0, cosmo))) ** (1 / 3)
+    Rq = (3 * (M_z / q) / (4 * jnp.pi * rhom(0, cosmo))) ** (1 / 3)
+    S0 = sigma0(R0, cosmo) ** 2
+    Sq = sigma0(Rq, cosmo) ** 2
     f = 1.0 / jnp.sqrt(Sq - S0)
 
     # Step 3: a from growth factor derivative at z=0 (eq B6)
@@ -67,10 +69,9 @@ def dmh_dt(M_z: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     # formula). The M(z) evolution step is skipped: the formula requires M(z)
     # evaluated at the observed redshift, which is just M0 itself.
     h = cosmo.H0 / 100.0
-    E_z = jnp.sqrt(cosmo.Omega_m * (1 + z)**3 + (1 - cosmo.Omega_m))
+    E_z = jnp.sqrt(cosmo.Omega_m * (1 + z) ** 3 + (1 - cosmo.Omega_m))
 
-    return (71.6 * (M_z / 1e12) * (h / 0.7)
-            * f * ((1 + z) - a) * E_z)
+    return 71.6 * (M_z / 1e12) * (h / 0.7) * f * ((1 + z) - a) * E_z
 
 
 @jax.jit
@@ -95,6 +96,7 @@ def dmstar_dt(
     f_b = cosmo.Omega_b / cosmo.Omega_m
     dm_h_dt = dmh_dt(m_h, z, cosmo)
     return f_star * f_b * dm_h_dt
+
 
 @jax.jit
 def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
@@ -121,6 +123,7 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
 
     rhomatter = rhom(0, cosmo)
     return fnu * (rhomatter / Mh**2) * jnp.abs(dln_sigma_dln_M)
+
 
 @jax.jit
 def mean_sfrd(
