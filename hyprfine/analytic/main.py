@@ -11,7 +11,7 @@ from hyprfine.recombination.emulator import call_hyrec_emulator
 from hyprfine.recombination.odes import evolve_igm
 
 vmappedxc = jax.vmap(xc, in_axes=(0, 0, 0, None))
-vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, 0, None))
+vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, None))
 vmappedxalpha = jax.vmap(x_alpha, in_axes=(0, None, None, None))
 
 @jax.jit
@@ -83,5 +83,5 @@ def generate_signal(
 
     T_s = Ts(T_gas, T_cmb, xc_values, xalpha_values)
 
-    T21_values = vmappedT21(z_grid, T_gas, T_cmb, T_s, xe, cosmo)
+    T21_values = vmappedT21(z_grid, T_cmb, T_s, xe, cosmo)
     return T21_values

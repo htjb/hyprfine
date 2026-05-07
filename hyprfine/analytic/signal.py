@@ -9,7 +9,6 @@ from hyprfine.parameters import cosmology
 @jax.jit
 def T21(
     z: int,
-    T_gas: jnp.ndarray,
     T_cmb: jnp.ndarray,
     T_s: jnp.ndarray,
     xe: jnp.ndarray,
