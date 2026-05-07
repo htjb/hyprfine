@@ -9,7 +9,6 @@ from hyprfine.analytic.xrays import _NU_X_GRID, J_X, sigma_X
 from hyprfine.parameters import astrophysics, const, cosmology
 from hyprfine.utils.cosmology import H, n_H_tot
 
-
 @jax.jit
 def f_heat_SSvS(xe: float) -> float:
     """Fraction of X-ray energy that goes into heating, as a function of xe.
@@ -173,6 +172,7 @@ def evolve_igm(
     h_nu_HI = const.h_planck_cgs * 3.288e15  # erg
     sig = sigma_X(nu)
 
+    @jax.jit
     def interp_jx(j_nu, z):
         return jnp.interp(z, z_grid, j_nu)
 
@@ -241,7 +241,7 @@ def evolve_igm(
         args=(cosmo, astro),
         saveat=diffrax.SaveAt(ts=z_out_grid),
         stepsize_controller=diffrax.PIDController(rtol=1e-3, atol=1e-5),
-        max_steps=100000,
+        max_steps=10000,
         throw=False
     )
 
