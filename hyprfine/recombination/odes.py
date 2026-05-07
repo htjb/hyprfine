@@ -242,6 +242,7 @@ def evolve_igm(
         saveat=diffrax.SaveAt(ts=z_out_grid),
         stepsize_controller=diffrax.PIDController(rtol=1e-3, atol=1e-5),
         max_steps=100000,
+        throw=False
     )
 
     z_out = solution.ts
