@@ -14,12 +14,11 @@ vmappedxc = jax.vmap(xc, in_axes=(0, 0, 0, None))
 vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, 0, None))
 vmappedxalpha = jax.vmap(x_alpha, in_axes=(0, None, None, None))
 
-
+@jax.jit
 def generate_signal(
     f_grid: jnp.ndarray,
     cosmo: cosmology,
     astro: astrophysics | None = None,
-    detailed_output: bool = False,
 ) -> (
     jnp.ndarray
     | tuple[
@@ -70,15 +69,13 @@ def generate_signal(
         cosmo=cosmo,
         astro=astro,
     )
-    T_gas_beyond_z50 = jnp.interp(
-        z_grid[z_grid <= 50], z_out[::-1], evolved_Tk[::-1]
-    )
-    T_gas = jnp.concat([T_gas[z_grid >= 50], T_gas_beyond_z50])
 
-    xe_beyond_z50 = jnp.interp(
-        z_grid[z_grid <= 50], z_out[::-1], evolved_xe[::-1]
-    )
-    xe = jnp.concat([xe[z_grid >= 50], xe_beyond_z50])
+    # Compute evolved values over the full grid
+    T_gas_evolved = jnp.interp(z_grid, z_out[::-1], evolved_Tk[::-1])
+    xe_evolved = jnp.interp(z_grid, z_out[::-1], evolved_xe[::-1])
+    # Use hyrec above z=50, evolved below z=50
+    T_gas = jnp.where(z_grid >= 50, T_gas, T_gas_evolved)
+    xe = jnp.where(z_grid >= 50, xe, xe_evolved)
 
     xc_values = vmappedxc(z_grid, xe, T_gas, cosmo)
 
