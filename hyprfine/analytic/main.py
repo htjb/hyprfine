@@ -20,12 +20,7 @@ def generate_signal(
     cosmo: cosmology,
     astro: astrophysics | None = None,
 ) -> (
-    jnp.ndarray
-    | tuple[
-        jnp.ndarray,
-        jnp.ndarray,
-        jnp.ndarray,
-        jnp.ndarray,
+    tuple[
         jnp.ndarray,
         jnp.ndarray,
         jnp.ndarray,
@@ -84,4 +79,4 @@ def generate_signal(
     T_s = Ts(T_gas, T_cmb, xc_values, xalpha_values)
 
     T21_values = vmappedT21(z_grid, T_cmb, T_s, xe, cosmo)
-    return T21_values
+    return T21_values, xe, T_gas
