@@ -72,7 +72,7 @@ def J_alpha(
         J_alpha: Lyman-alpha flux as a function of frequency, shape (N_freq,).
     """
     # Build chi(z') table and invert to get z'(R)
-    z_table = jnp.linspace(z + 0.01, z_max_source, 1000)
+    z_table = jnp.linspace(z + 0.01, z_max_source, 200)
     chi_table = vmapped_chi_single(z_table, z, cosmo)
 
     R = jnp.linspace(chi_table[0], chi_table[-1], N_shells)
