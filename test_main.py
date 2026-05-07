@@ -25,11 +25,10 @@ astro = astrophysics(
     M_pivot=3e11,
 )
 
-T21_values, xe, T_gas, xc_values, T_s, T_cmb, xalpha_values = generate_signal(
+T21_values, xe, T_gas = generate_signal(
     f_grid=jnp.linspace(5, 200, 100),  # Frequency grid in MHz
     cosmo=cosmo,
     astro=astro,
-    detailed_output=True,
 )
 
 plt.plot(jnp.linspace(5, 200, 100), T21_values)
@@ -40,15 +39,17 @@ plt.grid()
 plt.savefig("T21_vs_frequency.png")
 plt.show()
 
-freq = jnp.linspace(5, 200, 100)
-plt.plot(freq, T_cmb, label="T_cmb")
-plt.plot(freq, T_gas, label="T_gas")
-plt.plot(freq, T_s, label="T_s")
+import jax
+gradient_fn = jax.grad(generate_signal)
+
+fgrid = jnp.linspace(5, 200, 100)
+grad_T21 = gradient_fn(
+    fgrid, cosmo, astro
+)
+plt.plot(fgrid, grad_T21[0])  # Gradient with respect to frequency
 plt.xlabel("Frequency (MHz)")
-plt.ylabel("Temperature (K)")
-plt.title("Temperatures vs frequency")
-plt.loglog()
-plt.legend()
+plt.ylabel("Gradient of T21 with respect to frequency")
+plt.title("Gradient of 21cm brightness temperature T21 vs frequency")
 plt.grid()
-plt.savefig("temperatures_vs_frequency.png")
+plt.savefig("grad_T21_vs_frequency.png")
 plt.show()
