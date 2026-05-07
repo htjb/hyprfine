@@ -44,13 +44,13 @@ def time_device(device: jax.Device) -> tuple[float, float]:
 
     # Cold run — includes JIT compilation
     t0 = time.perf_counter()
-    sig = generate_signal(f, planck, astro)
+    sig, xe, T_gas = generate_signal(f, planck, astro)
     jax.block_until_ready(sig)
     cold = time.perf_counter() - t0
 
     # Warm run
     t0 = time.perf_counter()
-    sig = generate_signal(f, planck, astro)
+    sig, xe, T_gas = generate_signal(f, planck, astro)
     jax.block_until_ready(sig)
     warm = time.perf_counter() - t0
 
