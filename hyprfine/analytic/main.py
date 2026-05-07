@@ -53,14 +53,15 @@ def generate_signal(
         omc=cosmo.Omega_c,
         yhe=cosmo.Y_He,
     )
-    if astro is None:
-        xalpha_values = jnp.zeros_like(z_grid)
-    else:
-        xalpha_values = vmappedxalpha(z_grid, cosmo, astro, Tcmb(0))
+    xalpha_values = jnp.where(
+        astro is None,
+        jnp.zeros_like(z_grid),
+        vmappedxalpha(z_grid, cosmo, astro, Tcmb(0)),
+    )
 
     T_gas_z50 = jnp.interp(50, z_grid[::-1], T_gas[::-1])
     xe_z50 = jnp.interp(50, z_grid[::-1], xe[::-1])
-    
+
     z_out, evolved_Tk, evolved_xe = evolve_igm(
         z_start=50,
         z_end=z_grid[-1],
@@ -86,7 +87,4 @@ def generate_signal(
     T_s = Ts(T_gas, T_cmb, xc_values, xalpha_values)
 
     T21_values = vmappedT21(z_grid, T_gas, T_cmb, T_s, xe, cosmo)
-    if detailed_output:
-        return T21_values, xe, T_gas, xc_values, T_s, T_cmb, xalpha_values
-    else:
-        return T21_values
+    return T21_values
