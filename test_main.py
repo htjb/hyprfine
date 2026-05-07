@@ -40,16 +40,16 @@ plt.savefig("T21_vs_frequency.png")
 plt.show()
 
 import jax
-gradient_fn = jax.grad(generate_signal)
+J = jax.jacfwd(generate_signal, argnums=1)(jnp.linspace(5, 200, 100), cosmo, astro)
 
-fgrid = jnp.linspace(5, 200, 100)
-grad_T21 = gradient_fn(
-    fgrid, cosmo, astro
-)
-plt.plot(fgrid, grad_T21[0])  # Gradient with respect to frequency
-plt.xlabel("Frequency (MHz)")
-plt.ylabel("Gradient of T21 with respect to frequency")
-plt.title("Gradient of 21cm brightness temperature T21 vs frequency")
-plt.grid()
-plt.savefig("grad_T21_vs_frequency.png")
-plt.show()
+# fgrid = jnp.linspace(5, 200, 100)
+# grad_T21 = gradient_fn(
+#     fgrid
+# )
+# plt.plot(fgrid, grad_T21[0])  # Gradient with respect to frequency
+# plt.xlabel("Frequency (MHz)")
+# plt.ylabel("Gradient of T21 with respect to frequency")
+# plt.title("Gradient of 21cm brightness temperature T21 vs frequency")
+# plt.grid()
+# plt.savefig("grad_T21_vs_frequency.png")
+# plt.show()
