@@ -33,7 +33,9 @@ def fstar(
 
 
 @jax.jit
-def dmh_dt(M_z: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
+def dmh_dt(
+    M_z: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology, dDdz_0: float
+) -> jnp.ndarray:
     """Calculate the halo mass accretion rate.
 
     Approximation from Correa et al. 2015 (1409.5228),
@@ -44,6 +46,7 @@ def dmh_dt(M_z: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
         M_z: Halo mass in solar masses at redshift z.
         z: Redshift.
         cosmo: cosmology parameters.
+        dDdz_0: Derivative of growth factor at z=0.
 
     Returns:
         dm_h/dt: Halo mass accretion rate in solar masses per year.
@@ -61,7 +64,6 @@ def dmh_dt(M_z: jnp.ndarray, z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     f = 1.0 / jnp.sqrt(Sq - S0)
 
     # Step 3: a from growth factor derivative at z=0 (eq B6)
-    dDdz_0 = jax.grad(lambda z: growth_factor(z, cosmo))(0.0)
     a = 1.686 * jnp.sqrt(2.0 / jnp.pi) * dDdz_0 + 1.0
 
     # Step 4: dM/dt (Correa+2015 eq on p.4)
@@ -80,6 +82,7 @@ def dmstar_dt(
     z: jnp.ndarray,
     astro: astrophysics,
     cosmo: cosmology,
+    dDdz_0: float,
 ) -> jnp.ndarray:
     """Calculate the star formation rate.
 
@@ -88,13 +91,14 @@ def dmstar_dt(
         z: Redshift.
         astro: astrophysics parameters.
         cosmo: cosmology parameters.
-
+        dDdz_0: Derivative of growth factor at z=0.
+    
     Returns:
         dm_star/dt: Star formation rate in solar masses per year.
     """
     f_star = fstar(astro, m_h, z)
     f_b = cosmo.Omega_b / cosmo.Omega_m
-    dm_h_dt = dmh_dt(m_h, z, cosmo)
+    dm_h_dt = dmh_dt(m_h, z, cosmo, dDdz_0)
     return f_star * f_b * dm_h_dt
 
 
@@ -144,9 +148,10 @@ def mean_sfrd(
         SFRD: Star formation rate density in solar masses per year
             per cubic megaparsec.
     """
+    dDdz_0 = jax.grad(lambda z: growth_factor(z, cosmo))(0.0)
     dmstar_dt_val = dmstar_dt(
-        Mh, z, astro, cosmo
-    )  # in solar masses per year !need to check??
+        Mh, z, astro, cosmo, dDdz_0
+    )  # in solar masses per year
     dn_dmh_val = dn_dmh(
         Mh, cosmo, z
     )  # in number density per solar mass per Mpc^3
