@@ -53,15 +53,6 @@ def J_X(
     # SFRD at each shell
     sfrd_R = vmapped_mean_sfrd(z_prime, Mh, astro, cosmo)  # shape (N_shells,)
 
-    # X-ray emissivity at each shell (already includes attenuation)
-    # eps_R = jnp.array(
-    #     [
-    #         calculate_epsilon_x_tot(
-    #             z_source=zp, z_21=z, cosmo=cosmo, astro=astro
-    #         )
-    #         for zp in z_prime
-    #     ]
-    # )  # shape (N_shells, N_freq)
     eps_R = jax.vmap(
         lambda zp: calculate_epsilon_x_tot(
             z_source=zp, z_21=z, cosmo=cosmo, astro=astro
@@ -74,7 +65,8 @@ def J_X(
     # integral gives erg/s/Hz/Mpc^2, convert to erg/s/Hz/cm^2
     unit_factor = 1.0 / conv.Mpc_to_cm**2  # Mpc^-2 -> cm^-2
 
-    # integral is over comoving shells, so we need to convert the SFRD from comoving to physical units
+    # integral is over comoving shells, so we need to convert the SFRD 
+    # from comoving to physical units
     # and the (1+z)^2 factor accounts for this
 
     return _NU_X_GRID, (1 + z) ** 2 / (4 * jnp.pi) * jnp.trapezoid(
