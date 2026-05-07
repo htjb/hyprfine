@@ -92,7 +92,7 @@ def dmstar_dt(
         astro: astrophysics parameters.
         cosmo: cosmology parameters.
         dDdz_0: Derivative of growth factor at z=0.
-    
+
     Returns:
         dm_star/dt: Star formation rate in solar masses per year.
     """
