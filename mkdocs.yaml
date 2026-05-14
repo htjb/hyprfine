@@ -33,12 +33,13 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - API Reference: api-reference.md
   - Tutorials: tutorials.md
-  - HYREC-2 Emulator: hyrec_emulators.md
   - Modelling the 21cm Signal: 
       - Global Signal: modelling/intro.md
       - The Dark Ages: modelling/the-dark_ages.md
-      - Recombination: modelling/recombination.md
+      - Recombination, Neutral Fraction, and the Gas Temperature:
+        - HYREC-2 Emulator: hyrec_emulators.md
+        - Cosmic Dawn: modelling/recombination/cosmic-dawn.md
       - Lyman-alpha Flux: modelling/wouthuysen.md
       - X-ray Heating: modelling/xrays.md
+  - API Reference: api-reference.md
