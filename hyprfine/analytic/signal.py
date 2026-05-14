@@ -27,6 +27,7 @@ def T21(
     Returns:
         T21: 21cm brightness temperature in mKelvin.
     """
+    Omega_m = cosmo.Omega_b + cosmo.Omega_c
     return (
         54
         * (1 - xe)
@@ -34,7 +35,7 @@ def T21(
         * (cosmo.Omega_b * (cosmo.H0 / 100) ** 2)
         / 0.02242
         * jnp.sqrt(
-            0.1424 / (cosmo.Omega_m * (cosmo.H0 / 100) ** 2) * ((1 + z) / 40)
+            0.1424 / (Omega_m * (cosmo.H0 / 100) ** 2) * ((1 + z) / 40)
         )
         * (1 - T_cmb / T_s)
     )  # 21cm brightness temperature in mKelvin

@@ -2,6 +2,7 @@
 
 import jax
 import jax.numpy as jnp
+import equinox
 
 from hyprfine.analytic.coupling_coeffs import x_alpha, xc
 from hyprfine.analytic.signal import T21
@@ -14,7 +15,7 @@ vmappedxc = jax.vmap(xc, in_axes=(0, 0, 0, None))
 vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, None))
 vmappedxalpha = jax.vmap(x_alpha, in_axes=(0, None, None, None))
 
-@jax.jit
+@equinox.filter_jit
 def generate_signal(
     f_grid: jnp.ndarray,
     cosmo: cosmology,
@@ -30,7 +31,7 @@ def generate_signal(
 
     Args:
         f_grid: Frequency grid in MHz.
-        cosmo: Cosmological parameters [H0, Omega_m, Omega_b, Omega_c,
+        cosmo: Cosmological parameters [H0, Omega_b, Omega_c,
                 Y_He].
         astro: Astrophysical parameters.
         skip_cosmic_dawn: Whether to skip cosmic dawn.
@@ -47,30 +48,29 @@ def generate_signal(
         omc=cosmo.Omega_c,
         yhe=cosmo.Y_He,
     )
-    xalpha_values = jnp.where(
-        astro is None,
-        jnp.zeros_like(z_grid),
-        vmappedxalpha(z_grid, cosmo, astro, Tcmb(0)),
-    )
 
-    T_gas_z50 = jnp.interp(50, z_grid[::-1], T_gas[::-1])
-    xe_z50 = jnp.interp(50, z_grid[::-1], xe[::-1])
+    if astro is not None:
+        xalpha_values = vmappedxalpha(z_grid, cosmo, astro, Tcmb(0))
+        T_gas_z50 = jnp.interp(50, z_grid[::-1], T_gas[::-1])
+        xe_z50 = jnp.interp(50, z_grid[::-1], xe[::-1])
 
-    z_out, evolved_Tk, evolved_xe = evolve_igm(
-        z_start=50,
-        z_end=z_grid[-1],
-        Tk_init=T_gas_z50,
-        xe_init=xe_z50,
-        cosmo=cosmo,
-        astro=astro,
-    )
+        z_out, evolved_Tk, evolved_xe = evolve_igm(
+            z_start=50,
+            z_end=z_grid[-1],
+            Tk_init=T_gas_z50,
+            xe_init=xe_z50,
+            cosmo=cosmo,
+            astro=astro,
+        )
 
-    # Compute evolved values over the full grid
-    T_gas_evolved = jnp.interp(z_grid, z_out[::-1], evolved_Tk[::-1])
-    xe_evolved = jnp.interp(z_grid, z_out[::-1], evolved_xe[::-1])
-    # Use hyrec above z=50, evolved below z=50
-    T_gas = jnp.where(z_grid >= 50, T_gas, T_gas_evolved)
-    xe = jnp.where(z_grid >= 50, xe, xe_evolved)
+        # Compute evolved values over the full grid
+        T_gas_evolved = jnp.interp(z_grid, z_out[::-1], evolved_Tk[::-1])
+        xe_evolved = jnp.interp(z_grid, z_out[::-1], evolved_xe[::-1])
+        # Use hyrec above z=50, evolved below z=50
+        T_gas = jnp.where(z_grid >= 50, T_gas, T_gas_evolved)
+        xe = jnp.where(z_grid >= 50, xe, xe_evolved)
+    else:
+        xalpha_values = jnp.zeros_like(z_grid)
 
     xc_values = vmappedxc(z_grid, xe, T_gas, cosmo)
 

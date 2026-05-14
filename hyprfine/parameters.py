@@ -6,15 +6,13 @@ cosmology = namedtuple(
     "cosmo",
     [
         "H0",  # Hubble constant in km/s/Mpc
-        "Omega_m",  # Matter density parameter
         "Omega_b",  # Baryon density parameter
         "Omega_c",  # Cold dark matter density parameter
-        "Omega_r",  # Radiation density parameter
         "Y_He",  # Helium mass fraction
         "ns",  # scalar spectral index of primordial fluctuations
         "ln1010As",  # amplitude of the primordial power spectrum
     ],
-    defaults=(67.36, 0.315, 0.049, 0.266, 9e-5, 0.245, 0.97, 3.044),
+    defaults=(67.36, 0.049, 0.266, 0.245, 0.97, 3.044),
 )
 
 astrophysics = namedtuple(

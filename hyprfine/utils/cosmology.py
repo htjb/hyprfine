@@ -34,9 +34,10 @@ def H(z: float, cosmo: cosmology) -> float:
     Returns:
         H(z): Hubble parameter at redshift z in s^-1.
     """
-    Omega_L = 1.0 - cosmo.Omega_m
+    Omega_m = cosmo.Omega_b + cosmo.Omega_c
+    Omega_L = 1.0 - Omega_m
     return cosmo.H0 * jnp.sqrt(
-        cosmo.Omega_m * (1 + z) ** 3 + Omega_L + cosmo.Omega_r * (1 + z) ** 4
+        Omega_m * (1 + z) ** 3 + Omega_L
     )
 
 

@@ -22,7 +22,8 @@ def f_heat_SSvS(xe: float) -> float:
     Returns:
         Fraction of X-ray energy that goes into heating.
     """
-    return 0.9971 * (1 - (1 - xe**0.2663) ** 1.3163)
+    xe_safe = jnp.where(xe > 0, xe, 1e-10)  # Avoid zero to prevent NaNs
+    return 0.9971 * (1 - (1 - xe_safe**0.2663) ** 1.3163)
 
 
 @jax.jit
@@ -38,7 +39,8 @@ def f_ion_SSvS(xe: float) -> float:
     Returns:
         Fraction of X-ray energy that goes into ionization.
     """
-    return 0.3908 * (1 - xe**0.4092) ** 1.7592
+    xe_safe = jnp.where(xe > 0, xe, 1e-10)  # Avoid zero to prevent NaNs
+    return 0.3908 * (1 - xe_safe**0.4092) ** 1.7592
 
 
 @jax.jit
@@ -116,7 +118,7 @@ def dxe_dz(
         dxe/dz.
     """
     # Case B recombination coefficient
-    alpha_B = 2.6e-13 * (Tk / 1e4) ** (-0.76)  # cm^3/s
+    alpha_B = 2.6e-13 * (jnp.maximum(Tk, 1.0) / 1e4) ** (-0.76)  # cm^3/s
 
     # clumping factor
     C_HII = jnp.maximum(1.0, 2.9 * ((1 + z) / 6) ** (-1.1))
@@ -127,7 +129,8 @@ def dxe_dz(
 
     dxe = dtdz * (-recomb + xray_ion + uv_ion)
     # Prevent xe from exceeding 1: clamp derivative to non-negative when xe >= 1
-    return jnp.where(xe >= 1.0, jnp.maximum(0.0, dxe), dxe)
+    #return jnp.where(xe >= 1.0, jnp.maximum(0.0, dxe), dxe)
+    return dxe
 
 
 @jax.jit
@@ -182,12 +185,12 @@ def evolve_igm(
     def vector_field(
         z: float,
         state: tuple[float, float],
-        args: tuple[cosmology, astrophysics],
+        args: tuple[cosmology, astrophysics, jnp.ndarray, jnp.ndarray],
     ) -> tuple[float, float]:
         Tk, xe = state
-        cosmo, astro = args
+        cosmo, astro, jx_grid_T, niondot_grid = args
 
-        xe = jnp.clip(xe, 0.0, 1.0)  # Ensure xe stays in physical range
+        #xe = jnp.clip(xe, 0.0, 1.0)  # Ensure xe stays in physical range
 
         # Interpolate J_X at current z
         jx = vmapped_interp_jx(jx_grid_T, z)
@@ -238,7 +241,7 @@ def evolve_igm(
         t1=z_end,
         dt0=-0.1,
         y0=(Tk_init, xe_init),
-        args=(cosmo, astro),
+        args=(cosmo, astro, jx_grid_T, niondot_grid),
         saveat=diffrax.SaveAt(ts=z_out_grid),
         stepsize_controller=diffrax.PIDController(rtol=1e-3, atol=1e-5),
         max_steps=10000,

@@ -71,7 +71,8 @@ def dmh_dt(
     # formula). The M(z) evolution step is skipped: the formula requires M(z)
     # evaluated at the observed redshift, which is just M0 itself.
     h = cosmo.H0 / 100.0
-    E_z = jnp.sqrt(cosmo.Omega_m * (1 + z) ** 3 + (1 - cosmo.Omega_m))
+    Omega_m = cosmo.Omega_b + cosmo.Omega_c
+    E_z = jnp.sqrt(Omega_m * (1 + z) ** 3 + (1 - Omega_m))
 
     return 71.6 * (M_z / 1e12) * (h / 0.7) * f * ((1 + z) - a) * E_z
 
@@ -97,7 +98,8 @@ def dmstar_dt(
         dm_star/dt: Star formation rate in solar masses per year.
     """
     f_star = fstar(astro, m_h, z)
-    f_b = cosmo.Omega_b / cosmo.Omega_m
+    Omega_m = cosmo.Omega_b + cosmo.Omega_c
+    f_b = cosmo.Omega_b / Omega_m
     dm_h_dt = dmh_dt(m_h, z, cosmo, dDdz_0)
     return f_star * f_b * dm_h_dt
 
