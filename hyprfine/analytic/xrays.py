@@ -131,23 +131,24 @@ def calculate_epsilon_x_intrinsic(
     in_band = (nu_keV >= astro.nu_0) & (nu_keV <= 2.0)
 
     # Unnormalized power law, only where in band
-    Ix = jnp.where(in_band, nu_keV**astro.alpha_x, 0.0)
+    nu_keV_safe = jnp.where(in_band, nu_keV, 1.0)  # Avoid zero frequency for power law
+    Ix = jnp.where(in_band, nu_keV_safe**astro.alpha_x, 0.0)
 
     # Normalize so integral over band = 1 (in keV)
-    nu_keV_band = jnp.where(in_band, nu_keV, 0.0)
-    norm = jnp.trapezoid(Ix, nu_keV_band)
-    norm = jnp.where(norm == 0.0, 1.0, norm)  # Avoid division by zero
-    Ix_normalized = jnp.where(in_band, Ix / norm, 0.0)
+    norm = jnp.trapezoid(
+        jnp.where(in_band, Ix, 0.0), nu_keV
+    )
+    norm_safe = jnp.where(norm > 0, norm, 1.0)  # Avoid division by zero
+    Ix_normalized = jnp.where(in_band, Ix / norm_safe, 0.0)
+
+    nu_safe = jnp.where(in_band, nu, 1.0)  # Avoid log of zero
+    Ix_safe = jnp.where(in_band, Ix_normalized, 1.0)  # Avoid log of zero
 
     log_epsilon_x = (
         jnp.log10(astro.L40)
         + 40.0
-        + jnp.log10(
-            jnp.where(
-                Ix_normalized > 0, Ix_normalized, 1.0
-            )  # Avoid log of zero
-        )
-        - jnp.log10(nu)
+        + jnp.log10(Ix_safe)
+        - jnp.log10(nu_safe)
     )
 
     epsilon_x = jnp.where(
