@@ -13,6 +13,8 @@ from hyprfine.recombination.odes import evolve_igm
 vmappedxc = jax.vmap(xc, in_axes=(0, 0, 0, None))
 vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, None))
 vmappedxalpha = jax.vmap(x_alpha, in_axes=(0, None, None, None))
+vmappedTs = jax.vmap(Ts, in_axes=(0, 0, 0, 0))
+vmappedTcmb = jax.vmap(Tcmb, in_axes=(0,))
 
 @jax.jit
 def generate_signal(
@@ -73,9 +75,9 @@ def generate_signal(
 
     xc_values = vmappedxc(z_grid, xe, T_gas, cosmo)
 
-    T_cmb = Tcmb(z_grid)
+    T_cmb = vmappedTcmb(z_grid)
 
-    T_s = Ts(T_gas, T_cmb, xc_values, xalpha_values)
+    T_s = vmappedTs(T_gas, T_cmb, xc_values, xalpha_values)
 
     T21_values = vmappedT21(z_grid, T_cmb, T_s, xe, cosmo)
     return T21_values, xe, T_gas
