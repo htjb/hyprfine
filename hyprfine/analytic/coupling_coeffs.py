@@ -60,6 +60,8 @@ def xc(
 def kappa(Tk: jnp.ndarray, xe: jnp.ndarray) -> jnp.ndarray:
     """Calculate the collisional coupling coefficient kappa.
 
+    From https://arxiv.org/pdf/2108.00115.
+
     Args:
         Tk: Kinetic temperature in Kelvin.
         xe: Free electron fraction.
@@ -67,10 +69,10 @@ def kappa(Tk: jnp.ndarray, xe: jnp.ndarray) -> jnp.ndarray:
     Returns:
         kappa: Collisional coupling coefficient in m^3/s.
     """
-    # H-H collisions (Zygelman 2005, valid up to ~300K)
+    # H-H collisions
     kappa_HH = 3.1e-11 * Tk**0.357 * jnp.exp(-32.0 / Tk) * 1e-6  # m^3/s
 
-    # e-H collisions from https://arxiv.org/pdf/2108.00115
+    # e-H collisions
     kappa_eH = (
         10
         ** (
