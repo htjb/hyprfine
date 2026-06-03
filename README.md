@@ -34,17 +34,18 @@ pre-commit install
 To generate a signal with the default parameters you can run
 
 ```python
+from jax import config
+config.update("jax_enable_x64", True)
+
 import jax.numpy as jnp
 from hyprfine.analytic.main import generate_signal
 from hyprfine.parameters import cosmology, astrophysics
-
-config.update("jax_enable_x64", True)
 
 f_grid = jnp.linspace(10.0, 100.0, 500)  # MHz
 T21 = generate_signal(f_grid, cosmology(), astrophysics())
 ```
 
-where fp64 is needed purely for the Cosmic Dawn epoch. To change the default parameters you can specify
+To change the default parameters you can specify
 
 ```python
 cosmo = cosmology(
