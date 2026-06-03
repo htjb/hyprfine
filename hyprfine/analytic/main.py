@@ -2,7 +2,6 @@
 
 import jax
 import jax.numpy as jnp
-import equinox
 
 from hyprfine.analytic.coupling_coeffs import x_alpha, xc
 from hyprfine.analytic.signal import T21
@@ -15,7 +14,7 @@ vmappedxc = jax.vmap(xc, in_axes=(0, 0, 0, None))
 vmappedT21 = jax.vmap(T21, in_axes=(0, 0, 0, 0, None))
 vmappedxalpha = jax.vmap(x_alpha, in_axes=(0, None, None, None))
 
-@equinox.filter_jit
+@jax.jit
 def generate_signal(
     f_grid: jnp.ndarray,
     cosmo: cosmology,
