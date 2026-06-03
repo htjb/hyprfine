@@ -61,11 +61,11 @@ as a function of epoch for each emulator.
 
 **xe emulator**
 
-![Training curve for xe](hyrec-emulators/hyrec_training_curve_xe.png)
+![Training curve for xe](figures/hyrec-emulators/hyrec_training_curve_xe.png)
 
 **Tk emulator**
 
-![Training curve for Tk](hyrec-emulators/hyrec_training_curve_tk.png)
+![Training curve for Tk](figures/hyrec-emulators/hyrec_training_curve_tk.png)
 
 ## Predictions vs HYREC-2
 
@@ -74,11 +74,11 @@ HYREC-2 test samples (black) for 10 random cosmologies.
 
 **xe(z)**
 
-![Predictions for xe](hyrec-emulators/hyrec_predictions_xe.png)
+![Predictions for xe](figures/hyrec-emulators/hyrec_predictions_xe.png)
 
 **Tk(z)**
 
-![Predictions for Tk](hyrec-emulators/hyrec_predictions_tk.png)
+![Predictions for Tk](figures/hyrec-emulators/hyrec_predictions_tk.png)
 
 ## Accuracy
 
@@ -87,11 +87,11 @@ across all test samples as a function of redshift.
 
 **xe(z)**
 
-![Percentage error for xe](hyrec-emulators/hyrec_percent_error_xe.png)
+![Percentage error for xe](figures/hyrec-emulators/hyrec_percent_error_xe.png)
 
 **Tk(z)**
 
-![Percentage error for Tk](hyrec-emulators/hyrec_percent_error_tk.png)
+![Percentage error for Tk](figures/hyrec-emulators/hyrec_percent_error_tk.png)
 
 ## Trained emulator files
 
