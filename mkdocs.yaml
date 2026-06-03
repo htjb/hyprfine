@@ -43,9 +43,8 @@ nav:
   - Modelling the 21cm Signal: 
       - Global Signal: modelling/intro.md
       - The Dark Ages: modelling/the-dark_ages.md
-      - Recombination, Neutral Fraction, and the Gas Temperature:
-        - HYREC-2 Emulator: modelling/recombination/hyrec_emulators.md
-        - Cosmic Dawn: modelling/recombination/cosmic-dawn.md
+      - The Gas temperature and Neutral Fraction up to z=50: modelling/recombination/hyrec_emulators.md
       - Lyman-alpha Flux: modelling/wouthuysen.md
       - X-ray Heating: modelling/xrays.md
+      - The Gas temperature and Neutral Fraction during the Cosmic Dawn: modelling/recombination/cosmic-dawn.md
   - API Reference: api-reference.md
