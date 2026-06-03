@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from jax import config
+
 config.update("jax_enable_x64", True)
 
 import jax
@@ -28,7 +29,7 @@ planck = cosmology()
 
 astro = astrophysics()
 
-f_grid = jnp.linspace(5.0, 300.0, 500)  # MHz
+f_grid = jnp.linspace(5.0, 250.0, 500)  # MHz
 
 
 def time_device(device: jax.Device) -> tuple[float, float]:
@@ -93,6 +94,7 @@ ax_bar = fig.add_subplot(gs[0, 2])
 
 # Signal
 z_grid = 1420.4 / np.array(f_grid) - 1
+print("z_grid:", z_grid.min(), "-", z_grid.max())
 ax_sig.plot(z_grid, np.array(signal), color="steelblue", lw=1.5)
 ax_sig.set_xlabel("Redshift $z$")
 ax_sig.set_ylabel(r"$T_{21}$ [mK]")
