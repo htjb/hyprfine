@@ -16,6 +16,8 @@ def T21(
 ) -> jnp.ndarray:
     """Calculate 21cm brightness temperature.
 
+    From Mondal et al. 2310.15530.
+
     Args:
         z: Redshift.
         T_gas: Kinetic temperature in Kelvin.
