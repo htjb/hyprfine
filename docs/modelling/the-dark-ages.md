@@ -25,7 +25,11 @@ $$\kappa_{HH} = 3.1\times 10^{-11} T_k^{0.357} \exp(-\frac{32}{T_k}) 10^{-6}$$
 
 $$\log_{10} \kappa_{He} = -9.607 + 0.5 \log_{10} T_k \exp(-\frac{\log_{10}(T_k)**4}{1800}) -6$$
 
-in m$^{3}$/s. $\kappa$ essentially tells us how efficient the collisions are in producing a transition from one spin state to the other. In `hyprfine` $\kappa_{Hp}$ is set to be equal to $\kappa_{He}$. In practice the two rates differ by a factor related to the ratio of the proton and electron masses but they are subdominant effects compared to $\kappa_{HH}$ and so it is sufficient to equate the two.
+in m$^{3}$/s. $\kappa$ essentially tells us how efficient the collisions are in producing a transition from one spin state to the other. In `hyprfine` $\kappa_{Hp}$ is set to be equal to $\kappa_{He}$. In practice the two rates differ by a factor related to the ratio of the proton and electron masses but they are subdominant effects (see the top right hand figure below) compared to $\kappa_{HH}$ and so it is sufficient to equate the two.
 
+With $\kappa$ we can calculate $x_c$ which is a function of $H_0$, $\Omega_b$, $Y_{He}$ and $\Omega_c$ through $T_k$ and $x_e$. $x_c$ is shown in the top left hand panel in the figure below. The bottom left hand panel shows how $T_s$ is coupled to $T_k$ at high redshifts but then drifts back to $T_{\rm CMB}$ as the universe expands and collisional coupling becomes inefficient ($x_c$ tends to 0). The resulting 21-cm signal is shown in the bottom right panel.
 
+In order to calculate $x_c$ and $T_{21}$, we need to know how the gas temperature $T_k$ and the free electron fraction $x_e$ evolve over time. We discuss how these are calculated [here](docs/modelling/recombination/hyrec_emulators.md).
+
+![Dark Ages Signal](figures/dark-ages.png)
 
