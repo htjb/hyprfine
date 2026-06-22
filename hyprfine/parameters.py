@@ -31,7 +31,7 @@ astrophysics = namedtuple(
         "f_esc", # escape fraction of ionizing photons
         "N_ion", # number of ionizing photons produced per baryon in stars
     ],
-    defaults=(0.1, 0.5, -0.5, 3e11, 
+    defaults=(0.1, 0.5, -0.5, 3e11,
               1.0, -1.0, 0.5,
                 0.14, -8.0, 9690.0,
               0.15, 5000.0),
