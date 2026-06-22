@@ -9,32 +9,16 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
 from hyprfine.analytic.main import generate_signal
-from hyprfine.parameters import astrophysics, cosmology
+from hyprfine.parameters import cosmology
 
 
-fgrid = jnp.linspace(5, 200, 100)  # Frequency grid in MHz
-cosmo = cosmology(
-    H0=67.36,
-    Omega_b=0.049,
-    Omega_c=0.266,
-    Y_He=0.245,
-    ns=0.97,
-    ln1010As=3.044,
-)  # Example cosmology parameters
-
-astro = astrophysics(
-    epsilon=0.1,
-    alpha_star=0.5,
-    beta_star=-0.5,
-    M_pivot=3e11,
-)
+fgrid = jnp.linspace(5, 50, 100)  # Frequency grid in MHz
+cosmo = cosmology()  # Example cosmology parameters
 
 T21_values, xe, T_gas = generate_signal(
     f_grid=fgrid,
     cosmo=cosmo,
-    astro=astro,
 )
-
 
 fig, axes = plt.subplots(3, 3, figsize=(8, 8), sharex=True)
 signals = [T21_values, xe, T_gas]
