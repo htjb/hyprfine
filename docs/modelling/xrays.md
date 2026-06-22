@@ -1,11 +1,15 @@
 # X-ray Heating
 
-X-rays from early galaxies — predominantly high-mass X-ray binaries (HMXBs) —
+As the first galaxies evolve they start to emit X-rays which
 travel far through the largely neutral IGM and deposit energy as heat and
 secondary ionisations. Unlike UV photons, which are absorbed within or
 immediately around the host galaxy, soft X-rays (0.5–2 keV) can traverse
 cosmological distances before being absorbed, making them the dominant heating
 mechanism of the neutral IGM during the Cosmic Dawn.
+
+This heating of the IGM brings the gas temperature and coupled spin temperature
+back up towards the CMB and in some scenarios above the CMB creating an emission
+feature in the 21-cm brightness temperature.
 
 ## X-ray background intensity
 
@@ -39,7 +43,7 @@ HMXBs), and $\nu_0 = 0.5$ keV is the lower band edge. The spectral shape $(\nu_{
 integrate to unity over the band in keV, and the result is divided by the
 frequency in Hz to give a per-Hz emissivity. The overall scale is set by
 $L_{40}$, the X-ray luminosity per unit SFR in units of
-$10^{40}$ erg s$^{-1}$ (M$_\odot$ yr$^{-1}$)$^{-1}$. The parameters
+$10^{40}$ erg s $^{-1}$ (M $_\odot$ yr $^{-1}$)$^{-1}$. The parameters
 $L_{40}$, $\alpha_X$, and $\nu_0$ are free astrophysical parameters collected
 in the `astrophysics` namedtuple.
 
@@ -57,9 +61,9 @@ redshift $z''$ and the HI photoionisation cross section is approximated as
 $$\sigma_X(\nu) = \sigma_0 \left(\frac{\nu}{\nu_{\rm HI}}\right)^{-3}
 \qquad \nu \geq \nu_{\rm HI}$$
 
-with $\sigma_0 = 6.3 \times 10^{-18}$ cm$^2$ and
+with $\sigma_0 = 6.3 \times 10^{-18}$ cm $^2$ and
 $\nu_{\rm HI} = 3.288 \times 10^{15}$ Hz (the 13.6 eV ionisation threshold).
-Harder X-rays have smaller cross sections and therefore longer mean free paths,
+Harder X-rays have smaller cross-sections and therefore longer mean free paths,
 so higher-energy photons contribute disproportionately to IGM heating at
 large distances. The attenuated emissivity is then
 
