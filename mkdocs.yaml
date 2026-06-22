@@ -39,7 +39,10 @@ extra_javascript:
 
 nav:
   - Home: index.md
-  - Tutorials: tutorials.md
+  - Tutorials:
+      - The Dark Ages: tutorials/dark-ages.md
+      - The Cosmic Dawn: tutorials/cosmic-dawn.md
+      - Derivatives of the 21cm Signal: tutorials/derivatives.md 
   - Modelling the 21cm Signal: 
       - Global Signal: modelling/intro.md
       - The Dark Ages: modelling/the-dark-ages.md

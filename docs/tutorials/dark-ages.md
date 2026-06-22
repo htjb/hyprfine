@@ -1,6 +1,4 @@
-# Tutorials
-
-## Calculating a Dark Ages 21-cm signal
+# Calculating a Dark Ages 21-cm signal
 
 The dark ages span roughly redshifts z ~ 30–200, corresponding to observed
 frequencies of ~7–50 MHz. Over this period the 21-cm signal is set entirely
@@ -10,12 +8,19 @@ solely by cosmology.
 
 ### 1. Define a frequency grid
 
+`hyprfine` needs a frequency grid to evaluate the 21-cm signal over.
+
 ```python
 import jax.numpy as jnp
+from jax import config
+
+config.update("jax_enable_x64", True)
 
 # Frequencies in MHz covering the dark ages (z ~ 30-200)
 f_grid = jnp.linspace(10, 50, 500)  # MHz
 ```
+
+Note that `hyprfine` needs to be evaluated in float64.
 
 ### 2. Set up cosmological parameters
 
@@ -47,6 +52,10 @@ cosmo = cosmology(
 
 Any unspecified values are left at their defaults and indeed we can load in the
 default set with `cosmo = cosmology()`.
+
+Astrophysical parameters are defined with a `astrophysics()` object (see [here](cosmic-dawn.md)).
+However, if the astrophysics object is not passed to `hyprfine` then astrophysics is ignored 
+even at the redshifts where it is relevant.
 
 ### 3. Generate the signal
 
