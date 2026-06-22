@@ -29,7 +29,7 @@ in m$^{3}$/s. $\kappa$ essentially tells us how efficient the collisions are in 
 
 With $\kappa$ we can calculate $x_c$ which is a function of $H_0$, $\Omega_b$, $Y_{He}$ and $\Omega_c$ through $T_k$ and $x_e$. $x_c$ is shown in the top left hand panel in the figure below. The bottom left hand panel shows how $T_s$ is coupled to $T_k$ at high redshifts but then drifts back to $T_{\rm CMB}$ as the universe expands and collisional coupling becomes inefficient ($x_c$ tends to 0). The resulting 21-cm signal is shown in the bottom right panel.
 
-In order to calculate $x_c$ and $T_{21}$, we need to know how the gas temperature $T_k$ and the free electron fraction $x_e$ evolve over time. We discuss how these are calculated [here](docs/modelling/recombination/hyrec_emulators.md).
+In order to calculate $x_c$ and $T_{21}$, we need to know how the gas temperature $T_k$ and the free electron fraction $x_e$ evolve over time. We discuss how these are calculated [here](recombination/hyrec_emulators.md).
 
 ![Dark Ages Signal](figures/dark-ages.png)
 

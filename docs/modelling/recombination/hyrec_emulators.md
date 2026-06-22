@@ -103,7 +103,8 @@ The HYREC-2 emulators are used to predict $x_e$ and $T_k$ down to redshift
 $z = 50$ in `hyprfine`. At lower redshifts we solve a pair of couples 
 ODEs for $T_k$ and $x_e$ using the values from the emulators at $z=50$ as our 
 initial conditions. We do this so that we can include effects from the first stars and
-galaxies on the evolution of the two quantities. This is discussed more [here](docs/modelling/recombination/cosmic-dawn.md).
+galaxies on the evolution of the two quantities. This is discussed more [here](cosmic-dawn.md).
+
 In order to include the effects of the first stars and galaxies we need to estimate the total
-Lyman-$\alpha$ and X-ray fluxes at a given redshift which we discuss [here](wouthuysen.md) and
-[here](xrays.md).
+Lyman-$\alpha$ and X-ray fluxes at a given redshift which we discuss [here](../wouthuysen.md) and
+[here](../xrays.md).
