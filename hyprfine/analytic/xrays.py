@@ -38,14 +38,14 @@ def J_X(
         J_X: X-ray background intensity in erg/s/cm^2/Hz/sr, shape (N_freq,)
     """
     # Build chi(z') table and invert to get z'(R)
-    z_table = jnp.linspace(z + 0.01, z_max_source, 200)
+    z_table = jnp.linspace(z + 0.01, z_max_source, 100)
     chi_table = jax.lax.map(lambda z_s: chi_single(z_s, z, cosmo), z_table)
 
     R = jnp.linspace(chi_table[0], chi_table[-1], N_shells)
     z_prime = jnp.interp(R, chi_table, z_table)
 
     # Halo mass grid
-    Mh = 10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100)
+    Mh = 10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 50)
 
     # SFRD at each shell
     sfrd_R = jax.lax.map(
@@ -192,7 +192,7 @@ def tau_X(
     Returns:
         Optical depth (dimensionless)
     """
-    z_int = jnp.linspace(z_obs, z_source, 200)
+    z_int = jnp.linspace(z_obs, z_source, 100)
 
     # Frequency at each redshift along the path
     nu_z = nu_obs * (1 + z_int) / (1 + z_obs)

@@ -208,7 +208,7 @@ def sfrd(
     deltar, sigma_R = delta_r(R, cosmo, z, subkey)
     mean_sfrd_val = mean_sfrd(
         z,
-        10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100),
+        10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 50),
         astro,
         cosmo,
     )

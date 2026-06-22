@@ -70,14 +70,14 @@ def J_alpha(
         J_alpha: Lyman-alpha flux as a function of frequency, shape (N_freq,).
     """
     # Build chi(z') table and invert to get z'(R)
-    z_table = jnp.linspace(z + 0.01, z_max_source, 200)
+    z_table = jnp.linspace(z + 0.01, z_max_source, 100)
     chi_table = jax.lax.map(lambda z_s: chi_single(z_s, z, cosmo), z_table)
 
     R = jnp.linspace(chi_table[0], chi_table[-1], N_shells)
     z_prime = jnp.interp(R, chi_table, z_table)
 
     # Halo mass grid
-    Mh = 10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 100)
+    Mh = 10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 50)
 
     # SFRD and epsilon at each shell
     # comoving Msun/yr/Mpc^3 at each shell

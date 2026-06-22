@@ -141,7 +141,7 @@ def evolve_igm(
     xe_init: float,
     cosmo: cosmology,
     astro: astrophysics,
-    N_zgrid: int = 100,
+    N_zgrid: int = 50,
 ) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Evolve T_k and x_e from z_start to z_end using diffrax.
 
@@ -165,11 +165,11 @@ def evolve_igm(
     # Precompute J_X on a redshift grid
     z_grid = jnp.linspace(z_end, z_start, N_zgrid)
     nu = _NU_X_GRID
-    jx_grid = jax.vmap(lambda z: J_X(z, cosmo, astro)[1])(z_grid)
+    jx_grid = jax.lax.map(lambda z: J_X(z, cosmo, astro)[1], z_grid)
     jx_grid_T = jx_grid.T
 
     # Precompute nion
-    niondot_grid = jax.vmap(lambda z: nion_dot(z, cosmo, astro))(z_grid)
+    niondot_grid = jax.lax.map(lambda z: nion_dot(z, cosmo, astro), z_grid)
 
     # Precompute constants
     h_nu_HI = const.h_planck_cgs * 3.288e15  # erg
