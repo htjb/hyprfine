@@ -7,8 +7,6 @@ from hyprfine.analytic.sfrd import mean_sfrd
 from hyprfine.parameters import astrophysics, const, conv, cosmology
 from hyprfine.utils.cosmology import chi_single
 
-vmapped_mean_sfrd = jax.vmap(mean_sfrd, in_axes=(0, None, None, None))
-vmapped_chi_single = jax.vmap(chi_single, in_axes=(0, None, None))
 # Build once at module level
 _F_REC_VALUES = jnp.array([
     1.0,     # n=2
@@ -73,7 +71,7 @@ def J_alpha(
     """
     # Build chi(z') table and invert to get z'(R)
     z_table = jnp.linspace(z + 0.01, z_max_source, 200)
-    chi_table = vmapped_chi_single(z_table, z, cosmo)
+    chi_table = jax.lax.map(lambda z_s: chi_single(z_s, z, cosmo), z_table)
 
     R = jnp.linspace(chi_table[0], chi_table[-1], N_shells)
     z_prime = jnp.interp(R, chi_table, z_table)
@@ -83,11 +81,13 @@ def J_alpha(
 
     # SFRD and epsilon at each shell
     # comoving Msun/yr/Mpc^3 at each shell
-    sfrd_R = vmapped_mean_sfrd(z_prime, Mh, astro, cosmo)
-    eps_R = jax.vmap(
-        lambda zp: calculate_epsilon_alpha_tot(
-            z_source=zp, z_21=z, astro=astro)
-    )(z_prime)  # (N_shells, N_freq)
+    sfrd_R = jax.lax.map(
+        lambda z_p: mean_sfrd(z_p, Mh, astro, cosmo), z_prime
+    )
+    eps_R = jax.lax.map(
+        lambda zp: calculate_epsilon_alpha_tot(z_source=zp, z_21=z, astro=astro),
+        z_prime,
+    )  # (N_shells, N_freq)
 
     integrand = sfrd_R[:, None] * eps_R
 

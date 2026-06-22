@@ -1,8 +1,7 @@
 """Benchmark hyprfine signal generation on CPU (and CUDA GPU if available).
 
-Dark Ages (no ODE): vmapped over a batch of cosmologies — shows GPU scaling.
-Cosmic Dawn (ODE + J_X): single-signal timing only — the nested vmaps inside
-the ODE solver make full batching too memory-intensive with the current code.
+Both the Dark Ages (no ODE) and Cosmic Dawn (ODE + J_X) signal are vmapped
+over a batch of cosmologies and timed as a function of batch size.
 """
 
 import sys
@@ -29,11 +28,11 @@ planck = cosmology()
 astro = astrophysics()
 f_grid = jnp.linspace(5.0, 250.0, 500)
 
-BATCH_SIZES = [1, 10, 50, 100, 500]
+BATCH_SIZES = [1, 10, 50, 100]
 N_REPEATS = 3
 
-# vmap dark-ages generate_signal (no astro) over a batch of cosmologies
-batched_dark_ages = jax.vmap(generate_signal, in_axes=(None, 0, None))
+# vmap over cosmology (astro fixed); works for both DA (astro=None) and CD
+batched_generate = jax.vmap(generate_signal, in_axes=(None, 0, None))
 
 
 def make_batch_cosmo(batch_size: int) -> cosmology:
@@ -62,29 +61,27 @@ def time_fn(fn, *args, n_repeats=N_REPEATS):
     return min(times)
 
 
-def benchmark_da_batch(device, batch_sizes):
-    """Batch dark-ages benchmark (vmapped over cosmologies)."""
+def benchmark_batch(device, batch_sizes, mode="dark_ages"):
+    """Batch benchmark vmapped over cosmologies."""
     f = jax.device_put(f_grid, device)
+    a = None if mode == "dark_ages" else astro
+    label = "DA" if mode == "dark_ages" else "CD"
     times = []
     for bs in batch_sizes:
         bc = jax.device_put(make_batch_cosmo(bs), device)
-        t = time_fn(batched_dark_ages, f, bc, None)
+        t = time_fn(batched_generate, f, bc, a)
         times.append(t)
-        print(f"  batch={bs:5d}  {t:.3f} s  ({t/bs*1000:.1f} ms/signal)")
+        print(f"  [{label}] batch={bs:5d}  {t:.3f} s  ({t/bs*1000:.1f} ms/signal)")
     return times
 
 
 def benchmark_single(device, mode="dark_ages"):
     """Single-signal benchmark — cold and warm."""
     f = jax.device_put(f_grid, device)
+    a = None if mode == "dark_ages" else astro
     bc = jax.device_put(make_batch_cosmo(1), device)
+    fn = lambda: batched_generate(f, bc, a)  # noqa: E731
 
-    if mode == "dark_ages":
-        fn = lambda: batched_dark_ages(f, bc, None)  # noqa: E731
-    else:
-        fn = lambda: generate_signal(f, planck, astro)  # noqa: E731
-
-    # cold (includes JIT)
     t0 = time.perf_counter()
     out = fn()
     jax.block_until_ready(out)
@@ -109,37 +106,42 @@ cpu_cd_cold, cpu_cd_warm = benchmark_single(cpu, "cosmic_dawn")
 print(f"  cold={cpu_cd_cold:.3f} s   warm={cpu_cd_warm:.3f} s")
 
 print("Batched dark ages:")
-cpu_batch_times = benchmark_da_batch(cpu, BATCH_SIZES)
+cpu_da_times = benchmark_batch(cpu, BATCH_SIZES, "dark_ages")
+
+print("Batched cosmic dawn:")
+cpu_cd_times = benchmark_batch(cpu, BATCH_SIZES, "cosmic_dawn")
 
 results_single = {"CPU": (cpu_da_warm, cpu_cd_warm)}
-results_batch = {"CPU": (BATCH_SIZES, cpu_batch_times)}
+results_da = {"CPU": (BATCH_SIZES, cpu_da_times)}
+results_cd = {"CPU": (BATCH_SIZES, cpu_cd_times)}
 
 # ---------------------------------------------------------------------------
 # GPU (optional)
 # ---------------------------------------------------------------------------
-gpu_device = None
 if not skip_gpu:
     try:
         gpus = jax.devices("gpu")
         if gpus:
-            gpu_device = gpus[0]
-            print(f"\n── GPU ({gpu_device.device_kind}) ──")
+            gpu = gpus[0]
+            print(f"\n── GPU ({gpu.device_kind}) ──")
 
             print("Single-signal (dark ages):")
-            gpu_da_cold, gpu_da_warm = benchmark_single(gpu_device, "dark_ages")
+            gpu_da_cold, gpu_da_warm = benchmark_single(gpu, "dark_ages")
             print(f"  cold={gpu_da_cold:.3f} s   warm={gpu_da_warm:.3f} s")
 
             print("Single-signal (cosmic dawn):")
-            gpu_cd_cold, gpu_cd_warm = benchmark_single(
-                gpu_device, "cosmic_dawn"
-            )
+            gpu_cd_cold, gpu_cd_warm = benchmark_single(gpu, "cosmic_dawn")
             print(f"  cold={gpu_cd_cold:.3f} s   warm={gpu_cd_warm:.3f} s")
 
             print("Batched dark ages:")
-            gpu_batch_times = benchmark_da_batch(gpu_device, BATCH_SIZES)
+            gpu_da_times = benchmark_batch(gpu, BATCH_SIZES, "dark_ages")
+
+            print("Batched cosmic dawn:")
+            gpu_cd_times = benchmark_batch(gpu, BATCH_SIZES, "cosmic_dawn")
 
             results_single["GPU"] = (gpu_da_warm, gpu_cd_warm)
-            results_batch["GPU"] = (BATCH_SIZES, gpu_batch_times)
+            results_da["GPU"] = (BATCH_SIZES, gpu_da_times)
+            results_cd["GPU"] = (BATCH_SIZES, gpu_cd_times)
     except RuntimeError:
         print("No CUDA GPU found — skipping.")
 
@@ -147,11 +149,10 @@ if not skip_gpu:
 # Plot
 # ---------------------------------------------------------------------------
 colours = {"CPU": "steelblue", "GPU": "darkorange"}
-
 fig, axes = plt.subplots(1, 3, figsize=(13, 4.5))
 ax_bar, ax_total, ax_per = axes
 
-# --- Left: single-signal bar chart (dark ages vs cosmic dawn) ---
+# --- Left: single-signal bar chart ---
 labels, da_vals, cd_vals = [], [], []
 for dev, (da, cd) in results_single.items():
     labels.append(dev)
@@ -178,33 +179,38 @@ ax_bar.legend(fontsize=8)
 ax_bar.grid(axis="y", ls=":", lw=0.5)
 
 # --- Middle: total batch time ---
-for dev, (bs, times) in results_batch.items():
-    ax_total.plot(bs, times, "o-", color=colours[dev], label=dev)
+for dev, (bs, times) in results_da.items():
+    ax_total.plot(bs, times, "o-", color=colours[dev], label=f"{dev} DA")
+for dev, (bs, times) in results_cd.items():
+    ax_total.plot(bs, times, "s--", color=colours[dev], label=f"{dev} CD")
 
-t1_cpu = cpu_batch_times[0]
+t1_cpu_da = cpu_da_times[0]
 bs_ref = np.array(BATCH_SIZES)
-ax_total.plot(bs_ref, t1_cpu * bs_ref, "--", color="grey", lw=1,
-              label="Linear (CPU×1)")
+ax_total.plot(bs_ref, t1_cpu_da * bs_ref, ":", color="grey", lw=1,
+              label="Linear (CPU DA×1)")
 ax_total.set_xscale("log")
 ax_total.set_yscale("log")
 ax_total.set_xlabel("Batch size")
 ax_total.set_ylabel("Wall time [s]")
-ax_total.set_title("Batched dark ages — total time")
-ax_total.legend(fontsize=8)
+ax_total.set_title("Batched — total time")
+ax_total.legend(fontsize=7)
 ax_total.grid(which="both", ls=":", lw=0.5)
 
-# --- Right: time per signal ---
-for dev, (bs, times) in results_batch.items():
+# --- Right: ms per signal ---
+for dev, (bs, times) in results_da.items():
     bs_arr = np.array(bs)
-    t_arr = np.array(times)
-    ax_per.plot(bs_arr, t_arr / bs_arr * 1000, "o-", color=colours[dev],
-                label=dev)
+    ax_per.plot(bs_arr, np.array(times) / bs_arr * 1000, "o-",
+                color=colours[dev], label=f"{dev} DA")
+for dev, (bs, times) in results_cd.items():
+    bs_arr = np.array(bs)
+    ax_per.plot(bs_arr, np.array(times) / bs_arr * 1000, "s--",
+                color=colours[dev], label=f"{dev} CD")
 ax_per.set_xscale("log")
 ax_per.set_yscale("log")
 ax_per.set_xlabel("Batch size")
 ax_per.set_ylabel("Time per signal [ms]")
-ax_per.set_title("Batched dark ages — throughput")
-ax_per.legend(fontsize=8)
+ax_per.set_title("Batched — throughput")
+ax_per.legend(fontsize=7)
 ax_per.grid(which="both", ls=":", lw=0.5)
 
 plt.tight_layout()
