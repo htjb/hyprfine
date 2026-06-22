@@ -41,7 +41,7 @@ planck = cosmology()
 astro = astrophysics()
 f_grid = jnp.linspace(5.0, 250.0, 500)
 
-BATCH_SIZES = [1, 10, 50, 100]
+BATCH_SIZES = [1, 10, 100, 500, 1000, 2000]
 N_REPEATS = 3
 
 # vmap over cosmology (astro fixed); works for both DA (astro=None) and CD
