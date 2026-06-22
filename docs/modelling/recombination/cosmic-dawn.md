@@ -66,8 +66,8 @@ $$\frac{dx_e}{dz} = \frac{dt}{dz} \left( -C_{\rm HII}\, \alpha_B\, n_H\, x_e^2
 The three terms represent:
 
 **Recombination.** The case-B recombination coefficient
-$\alpha_B = 2.6 \times 10^{-13} (T_k / 10^4\,{\rm K})^{-0.76}$ cm$^3$
-s$^{-1}$ removes free electrons. A clumping factor
+$\alpha_B = 2.6 \times 10^{-13} (T_k / 10^4\,{\rm K})^{-0.76}$ cm $^3$
+s $^{-1}$ removes free electrons. A clumping factor
 $C_{\rm HII} = \max(1,\, 2.9\,[(1+z)/6]^{-1.1})$ accounts for sub-resolution
 density inhomogeneities following the parametrisation used in 21cmFAST.
 
