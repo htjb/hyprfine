@@ -4,6 +4,7 @@ Both the Dark Ages (no ODE) and Cosmic Dawn (ODE + J_X) signal are vmapped
 over a batch of cosmologies and timed as a function of batch size.
 """
 
+import platform
 import sys
 import time
 from pathlib import Path
@@ -23,6 +24,18 @@ from hyprfine.analytic.main import generate_signal  # noqa: E402
 from hyprfine.parameters import astrophysics, cosmology  # noqa: E402
 
 skip_gpu = "--no-gpu" in sys.argv
+
+
+def cpu_name() -> str:
+    """Human-readable CPU model name (Linux /proc/cpuinfo, with fallback)."""
+    try:
+        with open("/proc/cpuinfo") as f:
+            for line in f:
+                if line.startswith("model name"):
+                    return line.split(":", 1)[1].strip()
+    except OSError:
+        pass
+    return platform.processor() or platform.machine() or "unknown CPU"
 
 planck = cosmology()
 astro = astrophysics()
@@ -118,11 +131,13 @@ results_cd = {"CPU": (BATCH_SIZES, cpu_cd_times)}
 # ---------------------------------------------------------------------------
 # GPU (optional)
 # ---------------------------------------------------------------------------
+gpu_name = None
 if not skip_gpu:
     try:
         gpus = jax.devices("gpu")
         if gpus:
             gpu = gpus[0]
+            gpu_name = gpu.device_kind
             print(f"\n── GPU ({gpu.device_kind}) ──")
 
             print("Single-signal (dark ages):")
@@ -213,7 +228,12 @@ ax_per.set_title("Batched — throughput")
 ax_per.legend(fontsize=7)
 ax_per.grid(which="both", ls=":", lw=0.5)
 
-plt.tight_layout()
+hw = f"CPU: {cpu_name()}"
+if gpu_name is not None:
+    hw += f"   |   GPU: {gpu_name}"
+fig.suptitle(hw, fontsize=10)
+
+plt.tight_layout(rect=(0, 0, 1, 0.96))
 out = Path(__file__).parent / "benchmark.png"
 plt.savefig(out, dpi=150)
 print(f"\nSaved {out}")
