@@ -1,8 +1,12 @@
 # Lyman-$\alpha$ Flux and the Wouthuysen-Field Effect
 
-The Wouthuysen-Field (WF) effect couples the spin temperature of neutral
-hydrogen to the kinetic temperature of the gas through Lyman-$\alpha$ photons.
-A Lyman-$\alpha$ photon absorbed by a hydrogen atom in the hyperfine ground
+As the first stars and galaxies begin to form at redshifts lower than $z=50$ they 
+begin to produce Lyman-$\alpha$ radiation. This radiation couples the spin temperature
+of neutral hydrogen back to the kinetic temperature of the gas through what is known
+as the Wouthuysen-Field (WF) effect. This creates another absorption feature in the signal after
+collisional coupling has become inefficient.
+
+In the WF effect, a Lyman-$\alpha$ photon absorbed by a hydrogen atom in the hyperfine ground
 state drives it via an intermediate excited state to the other hyperfine
 sublevel, effectively scrambling the spin state. When enough Lyman-$\alpha$
 photons are present, the spin temperature is pulled toward the gas kinetic
@@ -97,7 +101,7 @@ the `astrophysics` namedtuple.
 ### Halo mass accretion rate
 
 We use the approximation from Correa et al. (2015), which provides better
-accuracy over a wider range of cosmologies than earlier Fakhouri et al. (2010)
+accuracy over a wider range of cosmologies than other
 fitting formula:
 
 $$\dot{M}_h = 71.6\, \frac{M_h}{10^{12}\,M_\odot}\, \frac{h}{0.7}\, f(M_h)
