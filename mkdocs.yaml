@@ -42,7 +42,7 @@ nav:
   - Tutorials: tutorials.md
   - Modelling the 21cm Signal: 
       - Global Signal: modelling/intro.md
-      - The Dark Ages: modelling/the-dark_ages.md
+      - The Dark Ages: modelling/the-dark-ages.md
       - The Gas temperature and Neutral Fraction up to z=50: modelling/recombination/hyrec_emulators.md
       - Lyman-alpha Flux: modelling/wouthuysen.md
       - X-ray Heating: modelling/xrays.md
