@@ -59,19 +59,17 @@ def J_X(
         z_prime,
     )  # shape (N_shells, N_freq)
 
-    integrand = sfrd_R[:, None] * eps_R
+    # (1+z')^2 per shell: converts comoving SFRD to physical and accounts
+    # for cosmological dimming (Mesinger+2011 / Furlanetto+2006 formula)
+    integrand = sfrd_R[:, None] * eps_R * (1 + z_prime[:, None]) ** 2
 
     # Unit conversions: SFRD in Msun/yr/Mpc^3, epsilon in erg/s/Hz per Msun/yr
     # integral gives erg/s/Hz/Mpc^2, convert to erg/s/Hz/cm^2
     unit_factor = 1.0 / conv.Mpc_to_cm**2  # Mpc^-2 -> cm^-2
 
-    # integral is over comoving shells, so we need to convert the SFRD 
-    # from comoving to physical units
-    # and the (1+z)^2 factor accounts for this
-
-    return _NU_X_GRID, (1 + z) ** 2 / (4 * jnp.pi) * jnp.trapezoid(
+    return _NU_X_GRID, jnp.trapezoid(
         integrand, R, axis=0
-    ) * unit_factor  # erg/s/cm^2/Hz/sr
+    ) / (4 * jnp.pi) * unit_factor  # erg/s/cm^2/Hz/sr
 
 
 @jax.jit
@@ -129,7 +127,7 @@ def calculate_epsilon_x_intrinsic(
     nu_keV = nu / conv.keV_to_Hz
     in_band = (nu_keV >= astro.nu_0) & (nu_keV <= 2.0)
 
-    # Unnormalized power law in Hz; nu_safe avoids 0**negative at out-of-band points
+    # nu_safe avoids 0**negative at out-of-band points
     nu_safe = jnp.where(in_band, nu, 1.0)
     Ix = jnp.where(in_band, nu_safe**astro.alpha_x, 0.0)
 
