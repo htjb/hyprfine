@@ -128,8 +128,6 @@ def dxe_dz(
     uv_ion = niondot / nH_cm3
 
     dxe = dtdz * (-recomb + xray_ion + uv_ion)
-    # Prevent xe from exceeding 1: clamp derivative to non-negative when xe >= 1
-    #return jnp.where(xe >= 1.0, jnp.maximum(0.0, dxe), dxe)
     return dxe
 
 
@@ -176,7 +174,7 @@ def evolve_igm(
     sig = sigma_X(nu)
 
     @jax.jit
-    def interp_jx(j_nu, z):
+    def interp_jx(j_nu: jnp.ndarray, z: float) -> jnp.ndarray:
         return jnp.interp(z, z_grid, j_nu)
 
     vmapped_interp_jx = jax.vmap(interp_jx, in_axes=(0, None))
