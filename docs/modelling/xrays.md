@@ -37,12 +37,18 @@ within the 0.5–2 keV band
 $$\varepsilon_X(\nu) \propto \left(\frac{\nu_{\rm keV}}{1\,{\rm keV}}\right)^{\alpha_X}
 \qquad \nu_0 \leq \nu_{\rm keV} \leq 2\,{\rm keV}$$
 
-where $\nu_{\rm keV}$ is the photon frequency expressed in keV,
-$\alpha_X$ is the spectral index (negative for the falling spectra typical of
-HMXBs), and $\nu_0 = 0.5$ keV is the lower band edge. The spectral shape $(\nu_{\rm keV}/1\,{\rm keV})^{\alpha_X}$ is normalised to
-integrate to unity over the band in keV, and the result is divided by the
-frequency in Hz to give a per-Hz emissivity. The overall scale is set by
-$L_{40}$, the X-ray luminosity per unit SFR in units of
+where $\alpha_X$ is the spectral index (negative for the falling spectra typical
+of HMXBs) and $\nu_0 = 0.5$ keV is the lower band edge. Note that the power law
+is written directly in terms of frequency $\nu$ (in Hz), not in keV, so that the
+normalisation integral is performed over $d\nu$:
+
+$$\int_{\nu_0}^{\nu_{\rm max}} \varepsilon_X(\nu)\, d\nu = L_{40} \times 10^{40}
+\quad \text{erg s}^{-1}\,\text{(M}_\odot\,\text{yr}^{-1})^{-1}$$
+
+where the integration limits correspond to 0.5 and 2 keV in Hz. This ensures
+the correct spectral index $\alpha_X$ rather than $\alpha_X - 1$ that would
+result from normalising over $d\nu_{\rm keV}$ and then expressing the result per
+Hz. The overall scale $L_{40}$ is the X-ray luminosity per unit SFR in units of
 $10^{40}$ erg s $^{-1}$ (M $_\odot$ yr $^{-1}$)$^{-1}$. The parameters
 $L_{40}$, $\alpha_X$, and $\nu_0$ are free astrophysical parameters collected
 in the `astrophysics` namedtuple.

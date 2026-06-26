@@ -15,14 +15,27 @@ recombination history down to this redshift before any significant star
 formation has occurred. These values serve as initial conditions for the ODE
 system described below.
 
-## Coupled ODEs for $T_k$ and $x_e$
+## Coupled ODEs for $T_k$, $x_{e,\rm bg}$, and $Q$
 
-From $z = 35$ down to the end of reionisation, we integrate a pair of coupled
-first-order ordinary differential equations for the kinetic temperature $T_k(z)$
-and the free electron fraction $x_e(z)$. The integration is performed using the
-[diffrax](https://docs.kidger.site/diffrax/) library with the implicit Kvaerno5
-solver, which handles the stiff nature of these equations. See
-`hyprfine.recombination.odes`.
+From $z = 35$ down to the end of reionisation, we integrate three coupled
+first-order ordinary differential equations. The integration is performed using
+the [diffrax](https://docs.kidger.site/diffrax/) library with the implicit
+Kvaerno5 solver. See `hyprfine.recombination.odes`.
+
+The mean free electron fraction is split into two physically distinct
+contributions:
+
+- **$x_{e,\rm bg}$** — the "background" ionisation fraction of the diffuse IGM
+  outside HII bubbles. This includes the cosmological recombination residual
+  handed off from HYREC-2 and the boost from X-ray secondary ionisations. It
+  evolves under quadratic (homogeneous) recombination.
+- **$Q$** — the volume-filling factor of fully-ionised HII bubbles driven by UV
+  photons from early galaxies. Following Madau et al. (1999), recombinations
+  inside bubbles scale linearly with $Q$ (bubble model).
+
+The total mean ionisation fraction entering the 21-cm brightness temperature is
+
+$$x_e = x_{e,\rm bg} + Q$$
 
 ### Temperature evolution
 
@@ -58,41 +71,52 @@ evolution is
 
 $$\dot{T}_X = \frac{Q_X}{1.5\, k_B (1 + x_e + Y_{\rm He}/4)\, n_H}$$
 
-### Ionisation evolution
+### Background ionisation ($x_{e,\rm bg}$)
 
-$$\frac{dx_e}{dz} = \frac{dt}{dz} \left( -C_{\rm HII}\, \alpha_B\, n_H\, x_e^2
-+ \Gamma_X (1 - x_e) + \frac{\dot{n}_{\rm ion}}{n_H} \right)$$
+The background IGM is ionised by X-ray secondaries and recombines in a
+homogeneous (quadratic) fashion:
 
-The three terms represent:
+$$\frac{dx_{e,\rm bg}}{dz} = \frac{dt}{dz} \left(
+  -\alpha_B\, n_H\, x_{e,\rm bg}^2
+  + \Gamma_X (1 - x_e)
+\right)$$
 
-**Recombination.** The case-B recombination coefficient
-$\alpha_B = 2.6 \times 10^{-13} (T_k / 10^4\,{\rm K})^{-0.76}$ cm $^3$
-s $^{-1}$ removes free electrons. A clumping factor
-$C_{\rm HII} = \max(1,\, 2.9\,[(1+z)/6]^{-1.1})$ accounts for sub-resolution
-density inhomogeneities following the parametrisation used in 21cmFAST.
+Here $\alpha_B = 2.6 \times 10^{-13} (T_k / 10^4\,{\rm K})^{-0.76}$ cm$^3$
+s$^{-1}$ is the case-B recombination coefficient and $x_e = x_{e,\rm bg} + Q$
+is the total ionisation fraction. The quadratic $x_{e,\rm bg}^2$ term arises
+from $n_e n_p \propto x_{e,\rm bg}^2$ in the diffuse neutral IGM. The X-ray
+secondary ionisation rate is
 
-**X-ray secondary ionisation.** A fraction $f_{\rm ion}(x_e)$ of the absorbed
-X-ray energy goes into secondary ionisations rather than heat:
+$$\Gamma_X = 4\pi\, f_{\rm ion}(x_{e,\rm bg}) \int d\nu\,
+\frac{J_X(\nu,z)\, \sigma_X(\nu)}{h\nu}$$
 
-$$\Gamma_X = 4\pi\, f_{\rm ion}(x_e) \int d\nu\, \frac{J_X(\nu,z)\, \sigma_X(\nu)}{h\nu}$$
+### HII bubble filling factor ($Q$)
 
-**UV photoionisation.** Ionising (Lyman continuum) photons from early galaxies
-produce a volumetric ionising photon rate $\dot{n}_{\rm ion}$ (see
-`hyprfine.analytic.ionization`):
+UV (Lyman continuum) photons from early galaxies create fully-ionised HII
+bubbles. Following Madau et al. (1999), the volume-filling factor $Q$ evolves as
+
+$$\frac{dQ}{dz} = \frac{dt}{dz} \left(
+  \frac{\dot{n}_{\rm ion}}{n_H} - C_{\rm HII}\, \alpha_B\, n_H\, Q
+\right)$$
+
+The recombination term is linear in $Q$ because recombinations only occur inside
+the already-ionised regions (volume fraction $Q$), where $n_e = n_p = n_H$.
+The clumping factor $C_{\rm HII} = \max(1,\, 2.9\,[(1+z)/6]^{-1.1})$ accounts
+for sub-resolution density inhomogeneities inside bubbles.
+
+The UV ionising photon rate density is (see `hyprfine.analytic.ionization`)
 
 $$\dot{n}_{\rm ion} = \frac{f_{\rm esc}\, N_{\rm ion}\, \dot{\rho}_*(z)}{\bar{m}_b}$$
 
-where $f_{\rm esc}$ is the escape fraction of ionising photons, $N_{\rm ion}$ is
-the number of ionising photons produced per stellar baryon, $\dot{\rho}_*$ is
-the star formation rate density (see [Lyman-$\alpha$ Flux](../wouthuysen.md)),
-and $\bar{m}_b = 1.22 m_p$ is the mean baryon mass in a primordial gas.
+where $f_{\rm esc}$ is the ionising-photon escape fraction, $N_{\rm ion}$ is the
+number of ionising photons per stellar baryon, $\dot{\rho}_*$ is the SFRD (see
+[Lyman-$\alpha$ Flux](../wouthuysen.md)), and $\bar{m}_b = 1.22 m_p$.
 
 ## Heating and ionisation fractions
 
 The fractions of absorbed X-ray energy that go into heating and secondary
-ionisation depend on the ionisation state of the gas. We use the fitting
-formulae from Shull & van Steenberg (1985), as given in Furlanetto & Stoever
-(2010):
+ionisation depend on the ionisation state of the gas. We use the fitting formulae from Shull & van Steenberg (1985), Table 1
+(300 eV primary electron), as implemented in 21cmFAST:
 
 $$f_{\rm heat}(x_e) = 0.9971 \left[ 1 - (1 - x_e^{0.2663})^{1.3163} \right]$$
 
