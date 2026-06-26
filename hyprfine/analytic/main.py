@@ -52,11 +52,11 @@ def generate_signal(
 
     if astro is not None:
         xalpha_values = vmappedxalpha(z_grid, cosmo, astro, Tcmb(0))
-        T_gas_z50 = jnp.interp(50, z_grid[::-1], T_gas[::-1])
-        xe_z50 = jnp.interp(50, z_grid[::-1], xe[::-1])
+        T_gas_z50 = jnp.interp(35, z_grid[::-1], T_gas[::-1])
+        xe_z50 = jnp.interp(35, z_grid[::-1], xe[::-1])
 
         z_out, evolved_Tk, evolved_xe = evolve_igm(
-            z_start=50,
+            z_start=35,
             z_end=z_grid[-1],
             Tk_init=T_gas_z50,
             xe_init=xe_z50,
@@ -67,9 +67,9 @@ def generate_signal(
         # Compute evolved values over the full grid
         T_gas_evolved = jnp.interp(z_grid, z_out[::-1], evolved_Tk[::-1])
         xe_evolved = jnp.interp(z_grid, z_out[::-1], evolved_xe[::-1])
-        # Use hyrec above z=50, evolved below z=50
-        T_gas = jnp.where(z_grid >= 50, T_gas, T_gas_evolved)
-        xe = jnp.where(z_grid >= 50, xe, xe_evolved)
+        # Use hyrec above z=35, evolved below z=35
+        T_gas = jnp.where(z_grid >= 35, T_gas, T_gas_evolved)
+        xe = jnp.where(z_grid >= 35, xe, xe_evolved)
     else:
         xalpha_values = jnp.zeros_like(z_grid)
 
