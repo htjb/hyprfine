@@ -100,8 +100,8 @@ cached in memory for the lifetime of the process.
 ## Use in `hyprfine`
 
 The HYREC-2 emulators are used to predict $x_e$ and $T_k$ down to redshift
-$z = 50$ in `hyprfine`. At lower redshifts we solve a pair of couples 
-ODEs for $T_k$ and $x_e$ using the values from the emulators at $z=50$ as our 
+$z = 35$ in `hyprfine`. At lower redshifts we solve a pair of couples 
+ODEs for $T_k$ and $x_e$ using the values from the emulators at $z=35$ as our 
 initial conditions. We do this so that we can include effects from the first stars and
 galaxies on the evolution of the two quantities. This is discussed more [here](cosmic-dawn.md).
 

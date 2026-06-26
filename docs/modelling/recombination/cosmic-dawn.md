@@ -1,6 +1,6 @@
 # The IGM During the Cosmic Dawn
 
-During the Cosmic Dawn and Epoch of Reionisation (EoR), roughly $z \lesssim 50$,
+During the Cosmic Dawn and Epoch of Reionisation (EoR), roughly $z \lesssim 35$,
 the first stars and galaxies begin to form. Their radiation drives significant
 changes in the intergalactic medium (IGM): X-rays heat the gas, UV photons
 ionise it, and Lyman-$\alpha$ photons couple the spin temperature to the
@@ -9,7 +9,7 @@ evolve under these influences.
 
 ## Initial conditions
 
-At $z = 50$ we take $T_k$ and $x_e$ from the
+At $z = 35$ we take $T_k$ and $x_e$ from the
 [HYREC-2 emulator](hyrec_emulators.md), which accurately captures the
 recombination history down to this redshift before any significant star
 formation has occurred. These values serve as initial conditions for the ODE
@@ -17,7 +17,7 @@ system described below.
 
 ## Coupled ODEs for $T_k$ and $x_e$
 
-From $z = 50$ down to the end of reionisation, we integrate a pair of coupled
+From $z = 35$ down to the end of reionisation, we integrate a pair of coupled
 first-order ordinary differential equations for the kinetic temperature $T_k(z)$
 and the free electron fraction $x_e(z)$. The integration is performed using the
 [diffrax](https://docs.kidger.site/diffrax/) library with the implicit Kvaerno5
@@ -106,6 +106,6 @@ into heating. These fractions are implemented in `hyprfine.recombination.odes`.
 ## Coupling back to the signal
 
 Once the ODE system is solved, the output $T_k(z)$ and $x_e(z)$ are stitched
-onto the HYREC emulator output at $z = 50$. The combined history feeds into the
+onto the HYREC emulator output at $z = 35$. The combined history feeds into the
 spin temperature and 21-cm brightness temperature calculation described in
 [Global Signal](../intro.md).
