@@ -27,8 +27,7 @@ def x_alpha(
     # S_alpha is an order-unity correction factor, ~1 for now
     S_alpha = 1.0
 
-    nu, jalpha_values = J_alpha(z, cosmo, astro)  # Get J_alpha values
-    jalpha_alpha = jnp.interp(const.lyman_alpha_freq, nu, jalpha_values)
+    jalpha_alpha = J_alpha(z, cosmo, astro)
     return S_alpha * jalpha_alpha * J_alpha_c_inv
 
 

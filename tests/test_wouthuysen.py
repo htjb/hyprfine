@@ -73,6 +73,7 @@ def test_epsilon_alpha_tot_positive_for_source_above_observer(
 ) -> None:
     """Total emissivity should be positive when source is at higher redshift."""
     result = calculate_epsilon_alpha_tot(
-        z_source=jnp.array(15.0), z_21=jnp.array(10.0), astro=astro
+        z_source=jnp.array(12.0), z_21=jnp.array(10.0), astro=astro
     )
     assert jnp.any(result > 0)
+

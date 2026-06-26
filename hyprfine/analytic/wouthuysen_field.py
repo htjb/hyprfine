@@ -35,11 +35,6 @@ _F_REC_VALUES = jnp.array([
 _F_REC_DEFAULT = 0.358
 _F_REC_N_MIN = 2
 
-# At module level, alongside _F_REC_VALUES
-_NU_GRID = 10 ** jnp.arange(
-    jnp.log10(const.lyman_alpha_freq), jnp.log10(const.lyman_limit), 0.001
-)
-
 @jax.jit
 def J_alpha(
     z: float,
@@ -49,7 +44,7 @@ def J_alpha(
     Mmax: float = 1e16,
     N_shells: int = 50,
     z_max_source: float = 35.0,
-) -> tuple[jnp.ndarray, jnp.ndarray]:
+) -> jnp.ndarray:
     """Calculate the Lyman-alpha flux J_alpha at redshift z.
 
     Implements Eq. 24 of Munoz et al. (2023):
@@ -66,8 +61,7 @@ def J_alpha(
         z_max_source: Maximum source redshift to integrate to.
 
     Returns:
-        nu: Frequency grid corresponding to epsilon_alpha^tot (shape (N_freq,))
-        J_alpha: Lyman-alpha flux as a function of frequency, shape (N_freq,).
+        J_alpha: Lyman-alpha specific intensity at ν_Lα [cm⁻² s⁻¹ Hz⁻¹ sr⁻¹].
     """
     # Build chi(z') table and invert to get z'(R)
     z_table = jnp.linspace(z + 0.01, z_max_source, 100)
@@ -79,41 +73,20 @@ def J_alpha(
     # Halo mass grid
     Mh = 10 ** jnp.linspace(jnp.log10(Mmin), jnp.log10(Mmax), 50)
 
-    # SFRD and epsilon at each shell
-    # comoving Msun/yr/Mpc^3 at each shell
+    # SFRD [M_sun/yr/Mpc³] and scalar emissivity at each shell
     sfrd_R = jax.lax.map(
         lambda z_p: mean_sfrd(z_p, Mh, astro, cosmo), z_prime
-    )
+    )  # (N_shells,)
     eps_R = jax.lax.map(
-        lambda zp: calculate_epsilon_alpha_tot(
-            z_source=zp, z_21=z, astro=astro),
+        lambda zp: calculate_epsilon_alpha_tot(z_source=zp, z_21=z, astro=astro),
         z_prime,
-    )  # (N_shells, N_freq)
-
-    integrand = sfrd_R[:, None] * eps_R
-
-    # same frequency grid as epsilon_alpha_tot
-    nu = _NU_GRID
-
-    # J_alpha has units M_sun yr^-1 Mpc^-2 kg^-1 from the integral
-    # multiply by:
-    #   Msun_to_kg   (M_sun -> kg, cancels with kg^-1 in epsilon)
-    #   / yr_to_s    (yr^-1 -> s^-1)
-    #   / Mpc_to_cm^2 (Mpc^-2 -> cm^-2)
-    #   / (4*pi)     already divided, but need sr^-1 -- 
-    #               already there from 1/4pi
-    #   the Hz^-1 comes from the fact that
-    #   epsilon is per unit frequency implicitly
+    )  # (N_shells,)
 
     unit_factor = conv.Msun_to_kg / conv.yr_to_s / conv.Mpc_to_cm**2
 
-    # integral is over comoving shells, so we need to convert the 
-    # SFRD from comoving to physical units
-    # and the (1+z)^2 factor accounts for this
-    
-    return nu, (1 + z) ** 2 / (4 * jnp.pi) * jnp.trapezoid(
-        integrand, R, axis=0
-    ) * unit_factor  # (N_freq,)
+    return (1 + z) ** 2 / (4 * jnp.pi) * jnp.trapezoid(
+        sfrd_R * eps_R, R
+    ) * unit_factor
 
 @jax.jit
 def calculate_epsilon_alpha_tot(
@@ -134,27 +107,29 @@ def calculate_epsilon_alpha_tot(
         n_max: Maximum Lyman level to consider
 
     Returns:
-        Total effective emissivity
+        Total effective emissivity at ν_Lα [same units as epsilon_alpha_intrinsic].
     """
-    nu = _NU_GRID
-
-    nu_prime = nu * (1 + z_source) / (1 + z_21)
-    # Get intrinsic spectrum (unnormalized)
-    epsilon_intrinsic = calculate_epsilon_alpha_intrinsic(
-        nu_prime, astro
-    )
-
     ns = jnp.arange(2, n_max + 1)  # shape (n_max - 1,)
 
-    f_rec_n = jax.vmap(get_f_rec)(ns)  # only if get_f_rec is JAX-compatible
-    z_max_n = (1 + z_source) * (1 - (1 + ns) ** (-2.0)) / (1 - ns ** (-2.0)) - 1
+    f_rec_n = jax.vmap(get_f_rec)(ns)
+
+    # Frequency of each Lyman transition n -> 1
+    nu_n = const.lyman_limit * (1.0 - 1.0 / ns**2)
+    # Frequency at emission for each transition
+    nu_n_prime = nu_n * (1.0 + z_source) / (1.0 + z_21)
+
+    epsilon_intrinsic_n = calculate_epsilon_alpha_intrinsic(
+        nu_n_prime, astro
+    )
+
+    ratio_n = (1.0 - 1.0 / (ns + 1.0)**2) / (1.0 - 1.0 / ns**2)
+    z_max_n = (1.0 + z_21) * ratio_n - 1.0
     w_alpha_n = jnp.where(z_source < z_max_n, 1.0, 0.0)
 
-    weight = jnp.sum(f_rec_n * w_alpha_n)  # (22,) -> scalar
+    sum_eps = jnp.sum(f_rec_n * w_alpha_n * epsilon_intrinsic_n)
 
-    epsilon_tot = weight * epsilon_intrinsic
+    return jnp.where(z_source < z_21, 0.0, sum_eps)
 
-    return jnp.where(z_source < z_21, jnp.zeros_like(nu), epsilon_tot)
 
 @jax.jit
 def calculate_epsilon_alpha_intrinsic(

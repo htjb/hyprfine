@@ -126,36 +126,18 @@ def calculate_epsilon_x_intrinsic(
     Returns:
         Intrinsic X-ray emissivity ergs/s/SFR/Hz
     """
-    nu_keV = nu / conv.keV_to_Hz  # Convert frequency from Hz to keV
-    # Mask to 0.5-2 keV band
+    nu_keV = nu / conv.keV_to_Hz
     in_band = (nu_keV >= astro.nu_0) & (nu_keV <= 2.0)
 
-    # Unnormalized power law, only where in band
-    nu_keV_safe = jnp.where(in_band, nu_keV, 1.0)  # Avoid zero frequency for power law
-    Ix = jnp.where(in_band, nu_keV_safe**astro.alpha_x, 0.0)
+    # Unnormalized power law in Hz; nu_safe avoids 0**negative at out-of-band points
+    nu_safe = jnp.where(in_band, nu, 1.0)
+    Ix = jnp.where(in_band, nu_safe**astro.alpha_x, 0.0)
 
-    # Normalize so integral over band = 1 (in keV)
-    norm = jnp.trapezoid(
-        jnp.where(in_band, Ix, 0.0), nu_keV
-    )
-    norm_safe = jnp.where(norm > 0, norm, 1.0)  # Avoid division by zero
-    Ix_normalized = jnp.where(in_band, Ix / norm_safe, 0.0)
+    # Normalize so ∫ epsilon_x dν = L40 × 1e40 erg/s per (M_sun/yr)
+    norm = jnp.trapezoid(jnp.where(in_band, Ix, 0.0), nu)
+    norm_safe = jnp.where(norm > 0, norm, 1.0)
 
-    nu_safe = jnp.where(in_band, nu, 1.0)  # Avoid log of zero
-    Ix_safe = jnp.where(in_band, Ix_normalized, 1.0)  # Avoid log of zero
-
-    log_epsilon_x = (
-        jnp.log10(astro.L40)
-        + 40.0
-        + jnp.log10(Ix_safe)
-        - jnp.log10(nu_safe)
-    )
-
-    epsilon_x = jnp.where(
-        in_band, 10**log_epsilon_x, 0.0
-    )  # Set to 0 outside band
-
-    return epsilon_x
+    return jnp.where(in_band, astro.L40 * 1e40 * Ix / norm_safe, 0.0)
 
 
 @jax.jit

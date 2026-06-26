@@ -13,8 +13,8 @@ from hyprfine.utils.cosmology import H, n_H_tot
 def f_heat_SSvS(xe: float) -> float:
     """Fraction of X-ray energy that goes into heating, as a function of xe.
 
-    Based on the fitting formula from Shull & van Steenberg (1985), as given
-    in Furlanetto & Stoever (2010) and implemented in 21cmFAST.
+    Fitting formula from Shull & van Steenberg (1985), Table 1 (300 eV
+    primary electron). Implemented in 21cmFAST.
 
     Args:
         xe: Ionization fraction.
@@ -30,8 +30,8 @@ def f_heat_SSvS(xe: float) -> float:
 def f_ion_SSvS(xe: float) -> float:
     """Fraction of X-ray energy that goes into ionization, as a function of xe.
 
-    Based on the fitting formula from Shull & van Steenberg (1985), as given
-    in Furlanetto & Stoever (2010) and implemented in 21cmFAST.
+    Fitting formula from Shull & van Steenberg (1985), Table 1 (300 eV
+    primary electron). Implemented in 21cmFAST.
 
     Args:
         xe: Ionization fraction.
@@ -92,43 +92,68 @@ def dTk_dz(
 
 
 @jax.jit
-def dxe_dz(
+def dxe_bg_dz(
+    Tk: float,
+    xe_bg: float,
+    xe_total: float,
+    Gamma_X: float,
+    nH_cm3: float,
+    dtdz: float,
+) -> float:
+    """dx_e_bg/dz for the background (HYREC residual + X-ray) ionization.
+
+    Uses quadratic (homogeneous) recombination — appropriate for the diffuse
+    IGM outside HII bubbles. X-rays ionize the remaining neutral fraction
+    (1 - xe_total).
+
+    Args:
+        Tk: Kinetic temperature in K.
+        xe_bg: Background ionization fraction (X-ray + HYREC residual).
+        xe_total: Total mean ionization fraction (xe_bg + Q_HII).
+        Gamma_X: X-ray secondary ionization rate per H atom [s^-1].
+        nH_cm3: Hydrogen number density [cm^-3].
+        dtdz: dt/dz [s].
+
+    Returns:
+        dxe_bg/dz.
+    """
+    alpha_B = 2.6e-13 * (jnp.maximum(Tk, 1.0) / 1e4) ** (-0.76)
+    recomb = alpha_B * nH_cm3 * xe_bg**2
+    xray_ion = Gamma_X * (1 - xe_total)
+    return dtdz * (-recomb + xray_ion)
+
+
+@jax.jit
+def dQ_dz(
     z: float,
     Tk: float,
-    xe: float,
-    cosmo: cosmology,
-    Gamma_X: float,
+    Q: float,
     niondot: float,
     nH_cm3: float,
     dtdz: float,
 ) -> float:
-    """dx_e/dz including recombination and X-ray secondary ionization.
+    """dQ/dz for the UV HII bubble filling factor.
+
+    Uses linear (bubble-model) recombination — recombinations occur only
+    inside ionised regions (filling factor Q), so the rate is proportional
+    to Q rather than Q^2.  This matches the zeus21 / Madau+1999 convention.
 
     Args:
         z: Redshift.
         Tk: Kinetic temperature in K.
-        xe: Ionization fraction.
-        cosmo: Cosmology object.
-        Gamma_X: X-ray ionization rate per H atom [s^-1].
-        niondot: Ionization rate per H atom [s^-1].
-        nH_cm3: Hydrogen number density in cm^-3.
-        dtdz: dt/dz in seconds per unit redshift.
+        Q: HII bubble filling factor (UV contribution to mean xe).
+        niondot: UV ionizing photon rate density [photons s^-1 cm^-3].
+        nH_cm3: Hydrogen number density [cm^-3].
+        dtdz: dt/dz [s].
 
     Returns:
-        dxe/dz.
+        dQ/dz.
     """
-    # Case B recombination coefficient
-    alpha_B = 2.6e-13 * (jnp.maximum(Tk, 1.0) / 1e4) ** (-0.76)  # cm^3/s
-
-    # clumping factor
+    alpha_B = 2.6e-13 * (jnp.maximum(Tk, 1.0) / 1e4) ** (-0.76)
     C_HII = jnp.maximum(1.0, 2.9 * ((1 + z) / 6) ** (-1.1))
-
-    recomb = C_HII * alpha_B * nH_cm3 * xe**2
-    xray_ion = Gamma_X * (1 - xe)
+    recomb = C_HII * alpha_B * nH_cm3 * Q
     uv_ion = niondot / nH_cm3
-
-    dxe = dtdz * (-recomb + xray_ion + uv_ion)
-    return dxe
+    return dtdz * (uv_ion - recomb)
 
 
 @jax.jit
@@ -182,21 +207,22 @@ def evolve_igm(
     @jax.jit
     def vector_field(
         z: float,
-        state: tuple[float, float],
+        state: tuple[float, float, float],
         args: tuple[cosmology, astrophysics, jnp.ndarray, jnp.ndarray],
-    ) -> tuple[float, float]:
-        Tk, xe = state
+    ) -> tuple[float, float, float]:
+        Tk, xe_bg, Q = state
         cosmo, astro, jx_grid_T, niondot_grid = args
 
-        #xe = jnp.clip(xe, 0.0, 1.0)  # Ensure xe stays in physical range
+        xe_total = xe_bg + Q  # mean ionization fraction for T21 / Compton
 
         # Interpolate J_X at current z
         jx = vmapped_interp_jx(jx_grid_T, z)
 
         dtdz = dt_dz(z, cosmo)
         nH_cm3 = n_H_tot(z, cosmo) * 1e-6
-        f_heat = f_heat_SSvS(xe)
-        f_ion = f_ion_SSvS(xe)
+        # SSvS fractions use background xe (secondaries in the neutral IGM)
+        f_heat = f_heat_SSvS(xe_bg)
+        f_ion = f_ion_SSvS(xe_bg)
 
         # X-ray heating rate per unit volume [erg/s/cm^3]
         Q_X = (
@@ -223,8 +249,9 @@ def evolve_igm(
         niondot = jnp.interp(z, z_grid, niondot_grid)
 
         return (
-            dTk_dz(z, Tk, xe, cosmo, Q_X, nH_cm3, dtdz),
-            dxe_dz(z, Tk, xe, cosmo, Gamma_X, niondot, nH_cm3, dtdz),
+            dTk_dz(z, Tk, xe_total, cosmo, Q_X, nH_cm3, dtdz),
+            dxe_bg_dz(Tk, xe_bg, xe_total, Gamma_X, nH_cm3, dtdz),
+            dQ_dz(z, Tk, Q, niondot, nH_cm3, dtdz),
         )
 
     term = diffrax.ODETerm(vector_field)
@@ -238,7 +265,7 @@ def evolve_igm(
         t0=z_start,
         t1=z_end,
         dt0=-0.1,
-        y0=(Tk_init, xe_init),
+        y0=(Tk_init, xe_init, 0.0),  # Q_HII starts at zero
         args=(cosmo, astro, jx_grid_T, niondot_grid),
         saveat=diffrax.SaveAt(ts=z_out_grid),
         stepsize_controller=diffrax.PIDController(rtol=1e-3, atol=1e-5),
@@ -248,6 +275,8 @@ def evolve_igm(
 
     z_out = solution.ts
     Tk_out = solution.ys[0]
-    xe_out = solution.ys[1]
+    xe_bg_out = solution.ys[1]
+    Q_out = solution.ys[2]
+    xe_out = xe_bg_out + Q_out  # total mean ionisation fraction
 
     return z_out, Tk_out, xe_out
