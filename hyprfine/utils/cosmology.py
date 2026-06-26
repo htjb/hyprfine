@@ -3,7 +3,7 @@
 import jax
 import jax.numpy as jnp
 
-from hyprfine.matterpower import matterpowerspec
+from hyprfine.matterpower import _K_GRID, power_spectrum_eh98
 from hyprfine.parameters import const, cosmology
 
 
@@ -135,28 +135,26 @@ def sigma0(R: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     ) -> jnp.ndarray:
         """Integrand for calculating sigma0.
 
-        With k in h/Mpc, P(k) in (Mpc/h)^3, and R in Mpc/h,
-        the product k*R is dimensionless and the full integrand
-        k^2 * P(k) * W^2(kR) * dk is dimensionless, as required
-        for sigma^2. No extra h factor is needed.
+        With k in Mpc⁻¹, P(k) in Mpc³, and R in Mpc, the product k*R is
+        dimensionless and k² P(k) W²(kR) dk is dimensionless as required
+        for sigma².
 
         Args:
-            k: Wavenumber in h/Mpc.
-            pk: Matter power spectrum in (Mpc/h)^3.
-            R: Smoothing scale in Mpc/h
+            k: Wavenumber in Mpc⁻¹.
+            pk: Matter power spectrum in Mpc³.
+            R: Smoothing scale in Mpc.
         """
         window_func = (
             3 * (jnp.sin(R * k) - k * R * jnp.cos(R * k)) / (R * k) ** 3
         )
         return k**2 / (2 * jnp.pi**2) * pk * window_func**2
 
-    kmodes, power = matterpowerspec(cosmo, z=0)  # in 1/Mpc and Mpc^3
-    R_h = R  # * cosmo.H0 / 100.0  # Convert R from Mpc to Mpc/h
+    kmodes = _K_GRID  # Mpc^{-1}, covers all halo scales
+    power = power_spectrum_eh98(kmodes, cosmo)  # Mpc^3
     vmapped_integrand = jax.vmap(integrand, (None, None, 0))
-    integrand_values = vmapped_integrand(kmodes, power, R_h)
+    integrand_values = vmapped_integrand(kmodes, power, R)
     sigma_squared = jnp.trapezoid(integrand_values, kmodes, axis=1)
-    sigma = jnp.sqrt(sigma_squared)
-    return sigma
+    return jnp.sqrt(sigma_squared)
 
 @jax.jit
 def sigma(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
