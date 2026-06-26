@@ -45,7 +45,7 @@ def J_alpha(
     z: float,
     cosmo: cosmology,
     astro: astrophysics,
-    Mmin: float = 1e8,
+    Mmin: float = 1e6,
     Mmax: float = 1e16,
     N_shells: int = 50,
     z_max_source: float = 35.0,
@@ -85,7 +85,8 @@ def J_alpha(
         lambda z_p: mean_sfrd(z_p, Mh, astro, cosmo), z_prime
     )
     eps_R = jax.lax.map(
-        lambda zp: calculate_epsilon_alpha_tot(z_source=zp, z_21=z, astro=astro),
+        lambda zp: calculate_epsilon_alpha_tot(
+            z_source=zp, z_21=z, astro=astro),
         z_prime,
     )  # (N_shells, N_freq)
 

@@ -17,8 +17,8 @@ def J_X(
     z: float,
     cosmo: cosmology,
     astro: astrophysics,
-    Mmin: float = 1e8,
-    Mmax: float = 1e13,
+    Mmin: float = 1e6,
+    Mmax: float = 1e16,
     N_shells: int = 30,
     z_max_source: float = 35.0,
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
