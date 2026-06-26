@@ -118,7 +118,7 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     """
     Pst = 0.3
     Ast = 0.3222 * jnp.sqrt(2 / jnp.pi)
-    qst = 0.85
+    qst = 0.707
     delta_crit = 1.686
     sigma_val = sigma(Mh, cosmo, z)
     nu = jnp.sqrt(qst) * delta_crit / sigma_val
