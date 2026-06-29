@@ -97,4 +97,4 @@ mkdocs serve
 
 ## Citation
 
-If you use hyprfine in your research please link to this repo. 
+If you use `hyprfine` in your research please link to this repo. 
