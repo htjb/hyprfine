@@ -9,7 +9,7 @@ GPU-accelerated simulation tools for the cosmological 21-cm signal from the Dark
 
 Currently, the code features an analytic model for the sky-averaged 21-cm signal from the dark ages through to low redshifts at the end of the EoR. At the moment only the dark ages part of the code is differentiable. The graph below is generated with the code in `bin/benchmark_time.py` and `bin/benchmark_plot.py`. It shows the relative performance on CPU and GPU as a function of batch size as well as a comparison with [zeus21](https://github.com/ZeusCosmo/Zeus21). 
 
-![Benchmark](https://github.com/htjb/hyprfine/blob/main/bin/benchmark.png)
+![Benchmark](https://raw.githubusercontent.com/htjb/hyprfine/main/bin/benchmark.png)
 
 
 ## Installation
