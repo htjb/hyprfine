@@ -20,13 +20,13 @@ from jax import config
 
 config.update("jax_enable_x64", True)
 
-import jax
-import jax.numpy as jnp
-import numpy as np
-import zeus21
+import jax  # noqa: E402
+import jax.numpy as jnp  # noqa: E402
+import numpy as np  # noqa: E402
+import zeus21  # noqa: E402
 
-from hyprfine.analytic.main import generate_signal
-from hyprfine.parameters import astrophysics, cosmology
+from hyprfine.analytic.main import generate_signal  # noqa: E402
+from hyprfine.parameters import astrophysics, cosmology  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # CLI
@@ -160,7 +160,7 @@ def make_batched_params(n: int) -> tuple[cosmology, astrophysics]:
     return bc, ba
 
 
-def time_device(device: jax.Device) -> tuple[float, float, jnp.ndarray]: # type: ignore
+def time_device(device: jax.Device) -> tuple[float, float, jnp.ndarray]:  # type: ignore
     """Time the generate_signal function on a given device.
 
     Args:
@@ -183,12 +183,12 @@ def time_device(device: jax.Device) -> tuple[float, float, jnp.ndarray]: # type:
     return cold, warm, sig
 
 
-def bench_batched(device: jax.Device) -> list: # type: ignore
+def bench_batched(device: jax.Device) -> list:  # type: ignore
     """Benchmark batched generate_signal on a given device.
 
     Args:
         device: JAX device to run the benchmark on.
-    
+
     Returns:
         List of times per signal for each batch size.
     """
