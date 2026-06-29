@@ -48,7 +48,7 @@ def J_alpha(
     """Calculate the Lyman-alpha flux J_alpha at redshift z.
 
     Implements Eq. 24 of Munoz et al. (2023):
-        J_alpha(z) = (1+z)^2 / (4pi) * integral dR SFRD(R) 
+        J_alpha(z) = (1+z)^2 / (4pi) * integral dR SFRD(R)
             epsilon_alpha^tot(nu')
 
     Args:
@@ -61,7 +61,8 @@ def J_alpha(
         z_max_source: Maximum source redshift to integrate to.
 
     Returns:
-        J_alpha: Lyman-alpha specific intensity at ν_Lα [cm⁻² s⁻¹ Hz⁻¹ sr⁻¹].
+        J_alpha: Lyman-alpha specific intensity at nu_Lalpha
+            [cm^{-2} s^{-1} Hz^{-1} sr^{-1}].
     """
     # Build chi(z') table and invert to get z'(R)
     z_table = jnp.linspace(z + 0.01, z_max_source, 100)
@@ -78,7 +79,8 @@ def J_alpha(
         lambda z_p: mean_sfrd(z_p, Mh, astro, cosmo), z_prime
     )  # (N_shells,)
     eps_R = jax.lax.map(
-        lambda zp: calculate_epsilon_alpha_tot(z_source=zp, z_21=z, astro=astro),
+        lambda zp: calculate_epsilon_alpha_tot(
+            z_source=zp, z_21=z, astro=astro),
         z_prime,
     )  # (N_shells,)
 
@@ -90,7 +92,7 @@ def J_alpha(
 
 @jax.jit
 def calculate_epsilon_alpha_tot(
-    z_source: float,  # redshift of the source (shell R where the photon was emitted)
+    z_source: float,  # redshift of the source
     z_21: float,  # redshift of the 21cm signal observation
     astro: astrophysics,
     n_max: int = 23,
@@ -107,7 +109,8 @@ def calculate_epsilon_alpha_tot(
         n_max: Maximum Lyman level to consider
 
     Returns:
-        Total effective emissivity at ν_Lα [same units as epsilon_alpha_intrinsic].
+        Total effective emissivity at nu_Lalpha
+            [same units as epsilon_alpha_intrinsic].
     """
     ns = jnp.arange(2, n_max + 1)  # shape (n_max - 1,)
 
@@ -202,7 +205,7 @@ def calculate_epsilon_alpha_intrinsic(
     return epsilon * astro.N_alpha / mu_b  # Scale to total photon number
 
 
-def get_f_rec(n: int) -> float:
+def get_f_rec(n: int) -> jnp.ndarray:
     """Recycling fractions from Pritchard & Furlanetto (2006).
 
     What fraction of the non-direct decays eventually produce lyman
