@@ -265,5 +265,5 @@ ax_batch.set_xticks(batch_sizes)
 ax_batch.set_xticklabels([str(b) for b in batch_sizes])
 ax_batch.legend(fontsize=8)
 
-plt.savefig("bin/benchmark.png", dpi=150)
+plt.savefig("bin/benchmark.png", dpi=300)
 print("Saved benchmark.png")
