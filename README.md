@@ -7,7 +7,7 @@
 
 GPU-accelerated simulation tools for the cosmological 21-cm signal from the Dark Ages (DA), Cosmic Dawn (CD) and Epoch of Reionization (EoR). `hyprfine` is built using [JAX](https://github.com/google/jax) with the aim of building a signal model that runs on the GPU and is differentiable.
 
-Currently, the code features an analytic model for the sky-averaged 21-cm signal from the dark ages through to low redshifts at the end of the EoR. At the moment only the dark ages part of the code is differentiable. The graph below is generated with the code in `bin/benchmark.py` and shows the relative performance on CPU and GPU before and after JIT compilation.
+Currently, the code features an analytic model for the sky-averaged 21-cm signal from the dark ages through to low redshifts at the end of the EoR. At the moment only the dark ages part of the code is differentiable. The graph below is generated with the code in `bin/benchmark_time.py` and `bin/benchmark_plot.py`. It shows the relative performance on CPU and GPU as a function of batch size as well as a comparison with [zeus21](https://github.com/ZeusCosmo/Zeus21). 
 
 ![Benchmark](https://github.com/htjb/hyprfine/blob/main/bin/benchmark.png)
 
@@ -42,7 +42,7 @@ from hyprfine.analytic.main import generate_signal
 from hyprfine.parameters import cosmology, astrophysics
 
 f_grid = jnp.linspace(10.0, 100.0, 500)  # MHz
-T21 = generate_signal(f_grid, cosmology(), astrophysics())
+T21, xe, Tk = generate_signal(f_grid, cosmology(), astrophysics())
 ```
 
 To change the default parameters you can specify
@@ -88,7 +88,7 @@ dxedH0 = dxedcosmo.H0 # etc...
 
 ## Documentation
 
-Full documentation can be built and served locally:
+Full documentation including tutorials can be built and served locally:
 
 ```bash
 pip install ".[docs]"
