@@ -22,12 +22,12 @@ astrophysics = namedtuple(
         "alpha_star",  # power-law index for star formation efficiency
         "beta_star",  # power-law index for star formation efficiency
         "M_pivot",  # pivot mass for star formation efficiency
-        "L40", # X-ray luminosity per unit SFR in units of 10^40 erg/s/(Msun/yr)
+        "L40", # X-ray luminosity per unit SFR units of 10^40 erg/s/(Msun/yr)
         "alpha_x", # X-ray spectral index (negative for typical spectra)
         "nu_0", # Reference frequency for X-ray normalization (0.5 keV in keV)
         "alpha_low", # power law index for Lya emissivity below the Lyman limit
-        "alpha_high", # power law index for Lya emissivity above the Lyman limit
-        "N_alpha", # total number of Lyman-alpha photons produced per baryon in stars
+        "alpha_high", # power law index for Lya epsilon above the Lyman limit
+        "N_alpha", # total number of Lyman-alpha photons produced per baryon
         "f_esc", # escape fraction of ionizing photons
         "N_ion", # number of ionizing photons produced per baryon in stars
     ],
@@ -55,7 +55,7 @@ constants = namedtuple(
         "lyman_alpha_freq",  # Ly-α frequency in Hz
         "lyman_beta_freq",  # Ly-β frequency in Hz
         "lyman_limit",  # Lyman limit frequency in Hz
-        "sigma_SB_cgs",  # Stefan-Boltzmann constant in cgs units (erg/cm^2/s/K^4)
+        "sigma_SB_cgs",  # Stefan-Boltzmann constant (erg/cm^2/s/K^4)
         "sigma_T_cgs",  # Thomson cross-section in cgs units (cm^2)
         "h_planck_cgs",  # Planck constant in erg·s
         "m_e_cgs",  # electron mass in g

@@ -9,8 +9,9 @@ from hyprfine.analytic.xrays import _NU_X_GRID, J_X, sigma_X
 from hyprfine.parameters import astrophysics, const, cosmology
 from hyprfine.utils.cosmology import H, n_H_tot
 
+
 @jax.jit
-def f_heat_SSvS(xe: float) -> float:
+def f_heat_SSvS(xe: float) -> jnp.ndarray:
     """Fraction of X-ray energy that goes into heating, as a function of xe.
 
     Fitting formula from Shull & van Steenberg (1985), Table 1 (300 eV
@@ -27,7 +28,7 @@ def f_heat_SSvS(xe: float) -> float:
 
 
 @jax.jit
-def f_ion_SSvS(xe: float) -> float:
+def f_ion_SSvS(xe: float) -> jnp.ndarray:
     """Fraction of X-ray energy that goes into ionization, as a function of xe.
 
     Fitting formula from Shull & van Steenberg (1985), Table 1 (300 eV
@@ -44,7 +45,7 @@ def f_ion_SSvS(xe: float) -> float:
 
 
 @jax.jit
-def dt_dz(z: float, cosmo: cosmology) -> float:
+def dt_dz(z: float, cosmo: cosmology) -> jnp.ndarray:
     """dt/dz in seconds per unit redshift."""
     H_z = H(z, cosmo) * 1e3 / const.Mpc  # s^-1
     return -1.0 / (H_z * (1 + z))
@@ -99,7 +100,7 @@ def dxe_bg_dz(
     Gamma_X: float,
     nH_cm3: float,
     dtdz: float,
-) -> float:
+) -> jnp.ndarray:
     """dx_e_bg/dz for the background (HYREC residual + X-ray) ionization.
 
     Uses quadratic (homogeneous) recombination — appropriate for the diffuse
@@ -131,7 +132,7 @@ def dQ_dz(
     niondot: float,
     nH_cm3: float,
     dtdz: float,
-) -> float:
+) -> jnp.ndarray:
     """dQ/dz for the UV HII bubble filling factor.
 
     Uses linear (bubble-model) recombination — recombinations occur only
@@ -165,7 +166,7 @@ def evolve_igm(
     cosmo: cosmology,
     astro: astrophysics,
     N_zgrid: int = 50,
-) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+) -> tuple[jnp.ndarray | None, jnp.ndarray, jnp.ndarray]:
     """Evolve T_k and x_e from z_start to z_end using diffrax.
 
     Integrates directly in redshift z following the approach of
@@ -270,13 +271,13 @@ def evolve_igm(
         saveat=diffrax.SaveAt(ts=z_out_grid),
         stepsize_controller=diffrax.PIDController(rtol=1e-3, atol=1e-5),
         max_steps=10000,
-        throw=False
+        throw=False,
     )
 
     z_out = solution.ts
-    Tk_out = solution.ys[0]
-    xe_bg_out = solution.ys[1]
-    Q_out = solution.ys[2]
+    Tk_out = solution.ys[0] # type: ignore
+    xe_bg_out = solution.ys[1] # type: ignore
+    Q_out = solution.ys[2] # type: ignore
     xe_out = xe_bg_out + Q_out  # total mean ionisation fraction
 
     return z_out, Tk_out, xe_out

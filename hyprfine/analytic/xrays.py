@@ -100,7 +100,8 @@ def calculate_epsilon_x_tot(
     tau = vmapped_tau_X(_NU_X_GRID, z_21, z_source, cosmo)
     # tau = jnp.zeros_like(nu)  # Placeholder: no attenuation for now
 
-    return jnp.where(z_source > z_21, epsilon_intrinsic * jnp.exp(-tau), 0.0)
+    return jnp.asarray(jnp.where(z_source > z_21,
+                                 epsilon_intrinsic * jnp.exp(-tau), 0.0))
 
 
 vmapped_calculate_epsilon_x_tot = jax.vmap(
@@ -135,7 +136,9 @@ def calculate_epsilon_x_intrinsic(
     norm = jnp.trapezoid(jnp.where(in_band, Ix, 0.0), nu)
     norm_safe = jnp.where(norm > 0, norm, 1.0)
 
-    return jnp.where(in_band, astro.L40 * 1e40 * Ix / norm_safe, 0.0)
+    return jnp.asarray(
+        jnp.where(in_band, astro.L40 * 1e40 * Ix / norm_safe, 0.0)
+    )
 
 
 @jax.jit
@@ -161,7 +164,7 @@ def tau_X(
     z_obs: float,
     z_source: float,
     cosmo: cosmology,
-) -> float:
+) -> jnp.ndarray:
     """X-ray optical depth between z_obs and z_source.
 
     Args:

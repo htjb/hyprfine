@@ -4,7 +4,7 @@ Two implementations are provided:
 
 ``matterpowerspec``
     CosmoPowerJAX neural-network emulator (fast, JIT-compatible, but limited
-    to k ≤ 9.8 h/Mpc — unreliable for M ≲ 5 × 10⁹ M☉).
+    to k <= 9.8 h/Mpc — unreliable for M <= 5 x 10^{9} Modot).
 
 ``transfer_function_eh98`` / ``power_spectrum_eh98``
     Eisenstein & Hu (1998) analytic fitting formula, valid at all
@@ -24,8 +24,9 @@ from hyprfine.parameters import const, cosmology
 
 _CPJ_MPK = CPJ(probe="mpk_lin")
 
-# k grid for sigma0 integrals [Mpc⁻¹]; covers all halo scales from
-# galaxy clusters (M ~ 10¹⁵ M☉) to the first star-forming halos (M ~ 10⁶ M☉).
+# k grid for sigma0 integrals [Mpc^{-1}]; covers all halo scales from
+# galaxy clusters (M ~ 10^{15} Modot)
+# to the first star-forming halos (M ~ 10^{6} Modot).
 _K_GRID = jnp.logspace(-4, 3, 2000)
 
 
@@ -51,7 +52,7 @@ def matterpowerspec(
         "z": jnp.array([z]),
     }
     emulator_predictions = _CPJ_MPK.predict(cosmo_params)
-    return _CPJ_MPK.modes, emulator_predictions
+    return _CPJ_MPK.modes, emulator_predictions # type: ignore
 
 
 @jax.jit
@@ -60,18 +61,18 @@ def transfer_function_eh98(k: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
 
     Smooth (no-BAO) approximation from EH98 Appendix, accurate to ~5% for
     standard ΛCDM and valid at all wavenumbers.  Sufficient for computing
-    σ(M) and the halo mass function at cosmic-dawn scales.
+    sigma(M) and the halo mass function at cosmic-dawn scales.
 
     Args:
-        k: Wavenumber in Mpc⁻¹.
+        k: Wavenumber in Mpc^{-1}.
         cosmo: Cosmological parameters.
 
     Returns:
         T(k): Dimensionless transfer function, shape matching k.
 
     Reference:
-        Eisenstein & Hu (1998), ApJ 496, 605, arXiv:astro-ph/9709066,
-        Appendix (Eqs. 29–31).
+        Eisenstein & Hu (1998), ApJ 496, 605,
+        Appendix (Eqs. 29-31).
     """
     h = cosmo.H0 / 100.0
     Theta = const.Tcmb0 / 2.7
@@ -137,18 +138,18 @@ def power_spectrum_eh98(k: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
     """Linear matter power spectrum at z = 0 using the EH98 transfer function.
 
     Normalization is derived from the primordial scalar amplitude A_s
-    (Planck convention, pivot k_* = 0.05 Mpc⁻¹) via the sub-Hubble Poisson
+    (Planck convention, pivot k_* = 0.05 Mpc^{-1}) via the sub-Hubble Poisson
     equation relating the gravitational potential to the density contrast.
 
     Args:
-        k: Wavenumber in Mpc⁻¹.
+        k: Wavenumber in Mpc^{-1}.
         cosmo: Cosmological parameters.
 
     Returns:
         P(k): Linear matter power spectrum in Mpc³.
 
     Reference:
-        Eisenstein & Hu (1998), ApJ 496, 605, arXiv:astro-ph/9709066.
+        Eisenstein & Hu (1998), ApJ 496, 605.
     """
     T = transfer_function_eh98(k, cosmo)
     Omega_m = cosmo.Omega_b + cosmo.Omega_c

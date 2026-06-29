@@ -113,7 +113,7 @@ def growth_factor(z: jnp.ndarray, cosmo: cosmology) -> jnp.ndarray:
             Om ** (4 / 7) - Ol + (1 + Om / 2) * (1 + Ol / 70)
         )
 
-    return g(z) / (g(0.0) * (1 + z))
+    return g(z) / (g(jnp.asarray(0.0)) * (1 + z))
 
 
 @jax.jit
