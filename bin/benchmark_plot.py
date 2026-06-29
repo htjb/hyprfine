@@ -47,26 +47,44 @@ ax_sig.set_xscale("log")
 ax_sig.legend(fontsize=8)
 
 # ---------------------------------------------------------------------------
-# Throughput panel — one entry per dataset
+# Throughput panel — selectively plot the T4 (hyprfine GPU) and AMD Ryzen
+# (hyprfine CPU + zeus21) results, regardless of argument order.
 # ---------------------------------------------------------------------------
-for i, d in enumerate(datasets):
-    colour = COLOURS[i % len(COLOURS)]
-    batch_sizes = d["batch_sizes"]
+def find(substr: str, attr: str) -> dict | None:
+    """Return the first dataset whose ``attr`` contains ``substr``."""
+    for d in datasets:
+        if substr.lower() in (d.get(attr) or "").lower():
+            return d
+    return None
 
-    ax_batch.plot(
-        batch_sizes, d["cpu_batch_times"],
-        color=colour, marker="o", lw=1.5, label=f"hyprfine ({d['cpu_name']})",
-    )
-    if d["gpu_batch_times"] is not None:
-        ax_batch.plot(
-            batch_sizes, d["gpu_batch_times"],
-            color=colour, marker="s", lw=1.5, ls="--",
-            label=f"hyprfine ({d['gpu_name']})",
-        )
-    ax_batch.axhline(
-        d["z21_time"], color=colour, ls=":", lw=1.2,
-        label=f"zeus21 ({d['cpu_name']})",
-    )
+
+t4 = find("T4", "gpu_name")
+ryzen = find("Ryzen", "cpu_name")
+if t4 is None:
+    sys.exit("No dataset with a Tesla T4 GPU found in the inputs.")
+if ryzen is None:
+    sys.exit("No dataset with an AMD Ryzen CPU found in the inputs.")
+
+# Trim the trailing " with Radeon Graphics" (etc.) for a tidier label.
+ryzen_name = ryzen["cpu_name"].split(" with ")[0]
+
+# hyprfine on the Tesla T4 (GPU line from the T4 dataset)
+ax_batch.plot(
+    t4["batch_sizes"], t4["gpu_batch_times"],
+    color="steelblue", marker="s", lw=1.5, ls="--",
+    label=f"hyprfine ({t4['gpu_name']})",
+)
+# hyprfine on the AMD Ryzen CPU
+ax_batch.plot(
+    ryzen["batch_sizes"], ryzen["cpu_batch_times"],
+    color="darkorange", marker="o", lw=1.5,
+    label=f"hyprfine ({ryzen_name})",
+)
+# zeus21 on the AMD Ryzen only
+ax_batch.axhline(
+    ryzen["z21_time"], color="darkorange", ls=":", lw=1.2,
+    label=f"zeus21 ({ryzen_name})",
+)
 
 ax_batch.set_xlabel("Batch size")
 ax_batch.set_ylabel("Time per signal [s]")
