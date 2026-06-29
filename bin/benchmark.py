@@ -254,7 +254,7 @@ if gpu_batch_times is not None:
         label=f"hyprfine ({gpu.device_kind})",
     )
 ax_batch.axhline(
-    z21_time, color="seagreen", ls="--", lw=1.5, label="zeus21 (CPU)",
+    z21_time, color="seagreen", ls="--", lw=1.5, label=f"zeus21 ({cpu_name})",
 )
 ax_batch.set_xlabel("Batch size")
 ax_batch.set_ylabel("Time per signal [s]")
