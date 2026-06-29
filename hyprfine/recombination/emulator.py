@@ -1,17 +1,18 @@
 """Emulator-based recombination, replacing the HYREC-2 C-code wrapper."""
 
+import warnings
 from pathlib import Path
 
+import jax
 import jax.numpy as jnp
 from astroemu.network import mlp
 from astroemu.serialisation import load
 
+warnings.filterwarnings(
+    "ignore", message=".*Returning the config dict under.*"
+)
+
 _DATA_DIR = Path(__file__).parent.parent / "data"
-
-# Module-level cache: populated on first call, reused for every subsequent
-# cosmology evaluation within the same process.
-_cache: dict = {}
-
 
 def _load_emulator(label: str) -> dict:
     """Load and cache an emulator by label.
@@ -23,12 +24,13 @@ def _load_emulator(label: str) -> dict:
         Loaded emulator dict with keys 'params', 'hyperparams',
         'train_pipeline', etc.
     """
-    if label not in _cache:
-        path = _DATA_DIR / f"hyrec_{label}.astroemu"
-        _cache[label] = load(str(path))
-    return _cache[label]
+    path = _DATA_DIR / f"hyrec_{label}.astroemu"
+    return load(str(path))
 
+xe_emulator = _load_emulator("xe")
+tk_emulator = _load_emulator("tk")
 
+@jax.jit
 def call_hyrec_emulator(
     z_grid: jnp.ndarray,
     H0: float,
@@ -55,7 +57,10 @@ def call_hyrec_emulator(
     z_grid_orig = jnp.asarray(z_grid, dtype=jnp.float32)
     results = []
     for label in ("xe", "tk"):
-        loaded = _load_emulator(label)
+        if label == "xe":
+            loaded = xe_emulator
+        else:
+            loaded = tk_emulator
         pipeline = loaded["train_pipeline"]
 
         # Add batch dim so grid-redistribution pipeline steps (which expect

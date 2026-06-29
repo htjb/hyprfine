@@ -79,11 +79,15 @@ def unit_incremented(version_a: str, version_b: str) -> bool:
         )
 
 
+def parse_version_line(line: str) -> str:
+    """Extract the version number from a ``**Version**: x.y.z`` line."""
+    return line.split(":")[-1].replace("<br>", "").strip()
+
+
 def get_current_version() -> str:
     """Get current version of package from README.md."""
-    current_version = run_on_commandline("grep", "Version:", readme_file)
-    current_version = current_version.split("**")[-1].strip()
-    return current_version
+    current_version = run_on_commandline("grep", "Version", readme_file)
+    return parse_version_line(current_version)
 
 
 def main() -> None:
@@ -92,32 +96,20 @@ def main() -> None:
     current_version = get_current_version()
 
     # Get previous version from main branch of code
-    run_on_commandline("git", "fetch", "origin", "master")
+    run_on_commandline("git", "fetch", "origin", "main")
     readme_contents = run_on_commandline(
-        "git", "show", "remotes/origin/master:" + readme_file
+        "git", "show", "remotes/origin/main:" + readme_file
     )
 
     previous_version = None
     for line in readme_contents.splitlines():
-        if "Version:" in line:
-            previous_version = line.split("**")[-1].strip()
+        if "Version" in line:
+            previous_version = parse_version_line(line)
             break
 
     if previous_version is None:
-        print("Could not find version in README.md on master branch")
-        print("Trying README.rst...")
-        readme_rst = "README.rst"
-        readme_contents = run_on_commandline(
-            "git", "show", "remotes/origin/master:" + readme_rst
-        )
-        for line in readme_contents.splitlines():
-            if ":Version:" in line:
-                previous_version = line.split(":")[-1].strip()
-                break
-    if previous_version is None:
         sys.stderr.write(
-            "Could not find version in README.md"
-            + "or README.rst on master branch.\n"
+            "Could not find version in README.md on main branch.\n"
         )
         sys.exit(1)
 

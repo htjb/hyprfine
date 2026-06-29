@@ -26,14 +26,13 @@ def test_n_H_tot_increases_with_redshift(cosmo: cosmology) -> None:
 
 def test_n_H_tot_depends_on_omega_b(cosmo: cosmology) -> None:
     """Higher Omega_b should give higher hydrogen density."""
-    from hyprfine.parameters import cosmology
-
     cosmo_high_b = cosmology(
         H0=cosmo.H0,
-        Omega_m=cosmo.Omega_m,
         Omega_b=cosmo.Omega_b * 2,
         Omega_c=cosmo.Omega_c,
         Y_He=cosmo.Y_He,
+        ns=cosmo.ns,
+        ln1010As=cosmo.ln1010As,
     )
     assert n_H_tot(jnp.array(50.0), cosmo_high_b) > n_H_tot(
         jnp.array(50.0), cosmo

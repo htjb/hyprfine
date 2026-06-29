@@ -3,8 +3,32 @@
 import jax
 from jax import numpy as jnp
 
-from hyprfine.parameters import const, cosmology
+from hyprfine.analytic.wouthuysen_field import J_alpha
+from hyprfine.parameters import astrophysics, const, cosmology
 from hyprfine.utils.cosmology import n_H_tot
+
+
+@jax.jit
+def x_alpha(
+    z: float, cosmo: cosmology, astro: astrophysics, T_cmb0: float = 2.725
+) -> jnp.ndarray:
+    """Dimensionless Lyman-alpha coupling coefficient.
+
+    Args:
+        z: Redshift.
+        cosmo: Cosmology parameters.
+        astro: Astrophysics parameters.
+        T_cmb0: CMB temperature at z=0 in Kelvin.
+
+    Returns:
+        x_alpha: Lyman-alpha coupling coefficient.
+    """
+    J_alpha_c_inv = 1.811e11 / (1 + z) * (2.725 / T_cmb0)  # cm2 s Hz sr
+    # S_alpha is an order-unity correction factor, ~1 for now
+    S_alpha = 1.0
+
+    jalpha_alpha = J_alpha(z, cosmo, astro)
+    return S_alpha * jalpha_alpha * J_alpha_c_inv
 
 
 @jax.jit
@@ -24,7 +48,7 @@ def xc(
     """
     nH = n_H_tot(z, cosmo)
 
-    xc = (const.Tstar * kappa(z, Tk, xe) * nH) / (
+    xc = (const.Tstar * kappa(Tk, xe) * nH) / (
         const.A10 * const.Tcmb0 * (1 + z)
     )
 
@@ -32,21 +56,22 @@ def xc(
 
 
 @jax.jit
-def kappa(z: int, Tk: jnp.ndarray, xe: jnp.ndarray) -> jnp.ndarray:
+def kappa(Tk: jnp.ndarray, xe: jnp.ndarray) -> jnp.ndarray:
     """Calculate the collisional coupling coefficient kappa.
 
+    From https://arxiv.org/pdf/2108.00115.
+
     Args:
-        z: Redshift.
         Tk: Kinetic temperature in Kelvin.
         xe: Free electron fraction.
 
     Returns:
         kappa: Collisional coupling coefficient in m^3/s.
     """
-    # H-H collisions (Zygelman 2005, valid up to ~300K)
+    # H-H collisions
     kappa_HH = 3.1e-11 * Tk**0.357 * jnp.exp(-32.0 / Tk) * 1e-6  # m^3/s
 
-    # e-H collisions from https://arxiv.org/pdf/2108.00115
+    # e-H collisions
     kappa_eH = (
         10
         ** (

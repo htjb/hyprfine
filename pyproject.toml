@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hyprfine"
-version = "0.1.1"
+version = "1.0.0"
 description = "hyprfine: Simulation tools for 21cm Cosmology."
 readme = "README.md"
 authors = [
@@ -16,7 +16,8 @@ dependencies = [
     "jax",
     "jaxlib",
     "numpy",
-    "astroemu", 
+    "astroemu",
+    "diffrax"
 ]
 
 classifiers=[
@@ -51,7 +52,7 @@ where = ["."]
 include = ["hyprfine*"]
 
 [tool.setuptools.package-data]
-astroemu = ["data/*"]
+hyprfine = ["data/*"]
 
 [tool.ruff]
 line-length = 79

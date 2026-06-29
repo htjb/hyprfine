@@ -24,25 +24,32 @@ def test_tcmb_positive() -> None:
 
 
 def test_ts_uncoupled_equals_tcmb() -> None:
-    """With xc=0 (no coupling) spin temperature should equal Tcmb."""
+    """With xc=xa=0 (no coupling) spin temperature should equal Tcmb."""
     T_gas = jnp.array(50.0)
     T_cmb = jnp.array(30.0)
-    xc = jnp.array(0.0)
-    assert jnp.isclose(Ts(T_gas, T_cmb, xc), T_cmb)
+    result = Ts(T_gas, T_cmb, jnp.array(0.0), jnp.array(0.0))
+    assert jnp.isclose(result, T_cmb)
 
 
 def test_ts_strongly_coupled_approaches_tgas() -> None:
     """With very large xc, spin temperature should approach Tgas."""
     T_gas = jnp.array(50.0)
     T_cmb = jnp.array(30.0)
-    xc = jnp.array(1e10)
-    assert jnp.isclose(Ts(T_gas, T_cmb, xc), T_gas, rtol=1e-4)
+    result = Ts(T_gas, T_cmb, jnp.array(1e10), jnp.array(0.0))
+    assert jnp.isclose(result, T_gas, rtol=1e-4)
 
 
 def test_ts_between_tgas_and_tcmb() -> None:
     """Spin temperature should lie between Tgas and Tcmb."""
     T_gas = jnp.array(50.0)
     T_cmb = jnp.array(200.0)
-    xc = jnp.array(1.0)
-    T_spin = Ts(T_gas, T_cmb, xc)
+    T_spin = Ts(T_gas, T_cmb, jnp.array(1.0), jnp.array(0.0))
     assert T_gas <= T_spin <= T_cmb
+
+
+def test_ts_xalpha_coupling() -> None:
+    """With large x_alpha, spin temperature should also approach Tgas."""
+    T_gas = jnp.array(50.0)
+    T_cmb = jnp.array(200.0)
+    result = Ts(T_gas, T_cmb, jnp.array(0.0), jnp.array(1e10))
+    assert jnp.isclose(result, T_gas, rtol=1e-4)

@@ -30,9 +30,24 @@ plugins:
 markdown_extensions:
   - pymdownx.highlight
   - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 nav:
   - Home: index.md
+  - Tutorials:
+      - The Dark Ages: tutorials/dark-ages.md
+      - The Cosmic Dawn: tutorials/cosmic-dawn.md
+      - Derivatives of the 21cm Signal: tutorials/derivatives.md 
+  - Modelling the 21cm Signal: 
+      - Global Signal: modelling/intro.md
+      - The Dark Ages: modelling/the-dark-ages.md
+      - The Gas temperature and Neutral Fraction up to z=50: modelling/recombination/hyrec_emulators.md
+      - Lyman-alpha Flux: modelling/wouthuysen.md
+      - X-ray Heating: modelling/xrays.md
+      - The Gas temperature and Neutral Fraction during the Cosmic Dawn: modelling/recombination/cosmic-dawn.md
   - API Reference: api-reference.md
-  - Tutorials: tutorials.md
-  - HYREC-2 Emulator: hyrec_emulators.md

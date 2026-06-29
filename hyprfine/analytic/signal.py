@@ -9,13 +9,14 @@ from hyprfine.parameters import cosmology
 @jax.jit
 def T21(
     z: int,
-    T_gas: jnp.ndarray,
     T_cmb: jnp.ndarray,
     T_s: jnp.ndarray,
     xe: jnp.ndarray,
     cosmo: cosmology,
 ) -> jnp.ndarray:
     """Calculate 21cm brightness temperature.
+
+    From Mondal et al. 2310.15530.
 
     Args:
         z: Redshift.
@@ -28,6 +29,7 @@ def T21(
     Returns:
         T21: 21cm brightness temperature in mKelvin.
     """
+    Omega_m = cosmo.Omega_b + cosmo.Omega_c
     return (
         54
         * (1 - xe)
@@ -35,7 +37,7 @@ def T21(
         * (cosmo.Omega_b * (cosmo.H0 / 100) ** 2)
         / 0.02242
         * jnp.sqrt(
-            0.1424 / (cosmo.Omega_m * (cosmo.H0 / 100) ** 2) * ((1 + z) / 40)
+            0.1424 / (Omega_m * (cosmo.H0 / 100) ** 2) * ((1 + z) / 40)
         )
         * (1 - T_cmb / T_s)
     )  # 21cm brightness temperature in mKelvin
