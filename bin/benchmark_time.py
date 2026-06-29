@@ -1,5 +1,13 @@
-"""Benchmark hyprfine signal generation on CPU (and CUDA GPU if available)."""
+"""Run hyprfine/zeus21 timing benchmarks and save results to a JSON file.
 
+Usage:
+    python bin/benchmark_time.py [--output results.json] [--no-gpu]
+
+Output filename defaults to bin/benchmark_<cpu_name>.json.
+"""
+
+import argparse
+import json
 import platform
 import subprocess
 import sys
@@ -14,16 +22,19 @@ config.update("jax_enable_x64", True)
 
 import jax
 import jax.numpy as jnp
-import matplotlib.pyplot as plt
 import numpy as np
 import zeus21
 
 from hyprfine.analytic.main import generate_signal
-from hyprfine.parameters import cosmology, astrophysics
+from hyprfine.parameters import astrophysics, cosmology
 
-skip_gpu = False
-if len(sys.argv) > 1 and sys.argv[1] == "--no-gpu":
-    skip_gpu = True
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--output", default=None)
+parser.add_argument("--no-gpu", action="store_true")
+args = parser.parse_args()
 
 # ---------------------------------------------------------------------------
 # Shared fiducial parameters (Planck 2018 cosmology)
@@ -65,7 +76,9 @@ astro = astrophysics(
 
 f_grid = jnp.linspace(5.0, 250.0, 500)  # MHz
 
-
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 def get_cpu_name() -> str:
     system = platform.system()
     try:
@@ -96,58 +109,43 @@ cpu_name = get_cpu_name()
 
 def make_batched_params(n: int) -> tuple:
     bc = cosmology(
-        H0=jnp.full(n, H0),
-        Omega_b=jnp.full(n, Omega_b),
-        Omega_c=jnp.full(n, Omega_c),
-        Y_He=jnp.full(n, Y_He),
-        ns=jnp.full(n, ns),
-        ln1010As=jnp.full(n, ln1010As),
+        H0=jnp.full(n, H0), Omega_b=jnp.full(n, Omega_b),
+        Omega_c=jnp.full(n, Omega_c), Y_He=jnp.full(n, Y_He),
+        ns=jnp.full(n, ns), ln1010As=jnp.full(n, ln1010As),
     )
     ba = astrophysics(
-        epsilon=jnp.full(n, epsilon),
-        alpha_star=jnp.full(n, alpha_star),
-        beta_star=jnp.full(n, beta_star),
-        M_pivot=jnp.full(n, M_pivot),
-        L40=jnp.full(n, L40),
-        alpha_x=jnp.full(n, alpha_x),
-        nu_0=jnp.full(n, E0_keV),
-        alpha_low=jnp.full(n, alpha_low),
-        alpha_high=jnp.full(n, alpha_high),
-        N_alpha=jnp.full(n, N_alpha),
-        f_esc=jnp.full(n, f_esc),
-        N_ion=jnp.full(n, N_ion),
+        epsilon=jnp.full(n, epsilon), alpha_star=jnp.full(n, alpha_star),
+        beta_star=jnp.full(n, beta_star), M_pivot=jnp.full(n, M_pivot),
+        L40=jnp.full(n, L40), alpha_x=jnp.full(n, alpha_x),
+        nu_0=jnp.full(n, E0_keV), alpha_low=jnp.full(n, alpha_low),
+        alpha_high=jnp.full(n, alpha_high), N_alpha=jnp.full(n, N_alpha),
+        f_esc=jnp.full(n, f_esc), N_ion=jnp.full(n, N_ion),
     )
     return bc, ba
 
 
-def time_device(device: jax.Device) -> tuple[float, float]:
+def time_device(device: jax.Device) -> tuple:
     f = jax.device_put(f_grid, device)
-
     t0 = time.perf_counter()
     sig, xe, T_gas = generate_signal(f, planck, astro)
     jax.block_until_ready(sig)
     cold = time.perf_counter() - t0
-
     t0 = time.perf_counter()
     sig, xe, T_gas = generate_signal(f, planck, astro)
     jax.block_until_ready(sig)
     warm = time.perf_counter() - t0
-
     return cold, warm, sig
 
 
 def bench_batched(device: jax.Device) -> list[float]:
-    """Return warm time-per-signal for each batch size."""
     f = jax.device_put(f_grid, device)
     times = []
     for bs in batch_sizes:
         bc, ba = make_batched_params(bs)
         bc = jax.device_put(bc, device)
         ba = jax.device_put(ba, device)
-        # cold — includes compilation for this batch size
         sigs, _, _ = batched_generate(f, bc, ba)
         jax.block_until_ready(sigs)
-        # warm
         t0 = time.perf_counter()
         sigs, _, _ = batched_generate(f, bc, ba)
         jax.block_until_ready(sigs)
@@ -157,35 +155,36 @@ def bench_batched(device: jax.Device) -> list[float]:
 
 
 # ---------------------------------------------------------------------------
-# Always benchmark CPU
+# CPU benchmark
 # ---------------------------------------------------------------------------
 cpu = jax.devices("cpu")[0]
-print("Benchmarking CPU...")
+print(f"Benchmarking CPU ({cpu_name})...")
 cpu_cold, cpu_warm, signal = time_device(cpu)
 print(f"  Cold: {cpu_cold:.3f} s   Warm: {cpu_warm:.3f} s")
-print("  Batch benchmark (CPU):")
+print("  Batch benchmark:")
 cpu_batch_times = bench_batched(cpu)
 
 # ---------------------------------------------------------------------------
-# Optionally benchmark CUDA GPU
+# GPU benchmark
 # ---------------------------------------------------------------------------
+gpu_name = None
 gpu_batch_times = None
 try:
-    if not skip_gpu:
+    if not args.no_gpu:
         gpus = jax.devices("gpu")
         if gpus:
             gpu = gpus[0]
-            print(f"Benchmarking GPU ({gpu.device_kind})...")
+            gpu_name = gpu.device_kind
+            print(f"Benchmarking GPU ({gpu_name})...")
             gpu_cold, gpu_warm, _ = time_device(gpu)
             print(f"  Cold: {gpu_cold:.3f} s   Warm: {gpu_warm:.3f} s")
-            print(f"  Batch benchmark (GPU):")
+            print("  Batch benchmark:")
             gpu_batch_times = bench_batched(gpu)
 except RuntimeError:
-    gpus = None
     print("No CUDA GPU found — skipping GPU benchmark.")
 
 # ---------------------------------------------------------------------------
-# zeus21 CPU benchmark
+# zeus21 benchmark
 # ---------------------------------------------------------------------------
 user_params = zeus21.User_Parameters()
 cosmo_input = zeus21.Cosmo_Parameters_Input(
@@ -195,22 +194,13 @@ CosmoParams, ClassyCosmo, CorrFClass, HMFintclass = zeus21.cosmo_wrapper(
     user_params, cosmo_input
 )
 astro_params = zeus21.Astro_Parameters(
-    user_params,
-    CosmoParams,
-    alphastar=alpha_star,
-    betastar=beta_star,
-    epsstar=epsilon,
-    Mc=M_pivot,
-    L40_xray=L40,
-    E0_xray=E0_keV * 1000,
-    alpha_xray=alpha_x,
-    Nalpha_lyA_II=N_alpha,
-    USE_POPIII=False,
-    USE_LW_FEEDBACK=False,
+    user_params, CosmoParams,
+    alphastar=alpha_star, betastar=beta_star, epsstar=epsilon,
+    Mc=M_pivot, L40_xray=L40, E0_xray=E0_keV * 1000, alpha_xray=alpha_x,
+    Nalpha_lyA_II=N_alpha, USE_POPIII=False, USE_LW_FEEDBACK=False,
 )
 
 print("Benchmarking zeus21 (CPU)...")
-
 t0 = time.perf_counter()
 T21c = zeus21.get_T21_coefficients(
     user_params, CosmoParams, ClassyCosmo, astro_params, HMFintclass,
@@ -220,50 +210,26 @@ z21_time = time.perf_counter() - t0
 print(f"  {z21_time:.3f} s")
 
 # ---------------------------------------------------------------------------
-# Plot: signal + time-per-signal vs batch size
+# Save
 # ---------------------------------------------------------------------------
-fig = plt.figure(figsize=(11, 4.5), constrained_layout=True)
-gs = fig.add_gridspec(1, 3)
-ax_sig = fig.add_subplot(gs[0, :2])
-ax_batch = fig.add_subplot(gs[0, 2])
+output = args.output
+if output is None:
+    safe = cpu_name.replace(" ", "_").replace("/", "-")
+    output = f"bin/benchmark_{safe}.json"
 
-# Signal
-z_grid = 1420.4 / np.array(f_grid) - 1
-ax_sig.plot(
-    z_grid, np.array(signal), color="steelblue", lw=1.5, label="hyprfine",
-)
-ax_sig.plot(
-    T21c.zintegral, T21c.T21avg,
-    color="seagreen", lw=1.5, ls="--", label="zeus21",
-)
-ax_sig.set_xlabel("Redshift $z$")
-ax_sig.set_ylabel(r"$T_{21}$ [mK]")
-ax_sig.set_title("21-cm signal")
-ax_sig.set_xscale("log")
-ax_sig.legend(fontsize=8)
+data = {
+    "cpu_name": cpu_name,
+    "gpu_name": gpu_name,
+    "batch_sizes": batch_sizes,
+    "cpu_batch_times": cpu_batch_times,
+    "gpu_batch_times": gpu_batch_times,
+    "z21_time": z21_time,
+    "signal": np.array(signal).tolist(),
+    "f_grid": np.array(f_grid).tolist(),
+    "z21_signal": np.array(T21c.T21avg).tolist(),
+    "z21_zintegral": np.array(T21c.zintegral).tolist(),
+}
 
-# Time-per-signal vs batch size
-ax_batch.plot(
-    batch_sizes, cpu_batch_times,
-    color="steelblue", marker="o", lw=1.5, label=f"hyprfine ({cpu_name})",
-)
-if gpu_batch_times is not None:
-    ax_batch.plot(
-        batch_sizes, gpu_batch_times,
-        color="darkorange", marker="s", lw=1.5,
-        label=f"hyprfine ({gpu.device_kind})",
-    )
-ax_batch.axhline(
-    z21_time, color="seagreen", ls="--", lw=1.5, label=f"zeus21 ({cpu_name})",
-)
-ax_batch.set_xlabel("Batch size")
-ax_batch.set_ylabel("Time per signal [s]")
-ax_batch.set_title("Throughput scaling")
-ax_batch.set_xscale("log", base=2)
-ax_batch.set_yscale("log")
-ax_batch.set_xticks(batch_sizes)
-ax_batch.set_xticklabels([str(b) for b in batch_sizes])
-ax_batch.legend(fontsize=8)
-
-plt.savefig("bin/benchmark.png", dpi=300)
-print("Saved benchmark.png")
+with open(output, "w") as fh:
+    json.dump(data, fh, indent=2)
+print(f"Saved {output}")
