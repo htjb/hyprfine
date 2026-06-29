@@ -125,7 +125,7 @@ def dn_dmh(Mh: jnp.ndarray, cosmo: cosmology, z: jnp.ndarray) -> jnp.ndarray:
     fnu = Ast * nu * (1 + (nu ** (-2 * Pst))) * jnp.exp(-(nu**2) / 2)
 
     # Compute d(ln sigma)/d(ln M) numerically
-    dln_sigma_dln_M = jnp.gradient(jnp.log(sigma_val), jnp.log(Mh))
+    dln_sigma_dln_M = jnp.array(jnp.gradient(jnp.log(sigma_val), jnp.log(Mh)))
 
     rhomatter = rhom(0, cosmo)
     return fnu * (rhomatter / Mh**2) * jnp.abs(dln_sigma_dln_M)
