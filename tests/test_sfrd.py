@@ -15,7 +15,7 @@ def test_fstar_positive(cosmo: cosmology, astro: astrophysics) -> None:
 def test_fstar_suppressed_below_mturn(
     cosmo: cosmology, astro: astrophysics
 ) -> None:
-    """fstar should be suppressed for halos well below the turnover mass."""
+    """Fstar should be suppressed for halos well below the turnover mass."""
     z = jnp.array(20.0)
     f_large = fstar(astro, jnp.array(1e12), z)
     f_small = fstar(astro, jnp.array(1e5), z)
@@ -23,7 +23,7 @@ def test_fstar_suppressed_below_mturn(
 
 
 def test_fstar_scales_with_epsilon(cosmo: cosmology) -> None:
-    """fstar should scale proportionally with epsilon."""
+    """Fstar should scale proportionally with epsilon."""
     Mh = jnp.array(1e10)
     z = jnp.array(10.0)
     astro1 = astrophysics(epsilon=0.1)

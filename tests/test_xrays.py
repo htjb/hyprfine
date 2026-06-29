@@ -7,7 +7,7 @@ from hyprfine.analytic.xrays import (
     sigma_X,
     tau_X,
 )
-from hyprfine.parameters import astrophysics, const, cosmology
+from hyprfine.parameters import astrophysics, cosmology
 
 
 def test_sigma_x_zero_below_threshold() -> None:
@@ -17,7 +17,7 @@ def test_sigma_x_zero_below_threshold() -> None:
 
 
 def test_sigma_x_positive_above_threshold() -> None:
-    """Photoionisation cross section should be positive above the HI threshold."""
+    """Photoionisation cross section should be >0  above the HI threshold."""
     nu_above = jnp.array([1e16, 1e17, 1e18])
     assert jnp.all(sigma_X(nu_above) > 0)
 
@@ -35,6 +35,7 @@ def test_sigma_x_decreases_with_frequency() -> None:
 def test_epsilon_x_intrinsic_zero_outside_band(astro: astrophysics) -> None:
     """X-ray emissivity should be zero outside the 0.5–2 keV band."""
     from hyprfine.parameters import conv
+
     nu_below = jnp.array([0.1 * conv.keV_to_Hz])
     nu_above = jnp.array([5.0 * conv.keV_to_Hz])
     assert jnp.all(calculate_epsilon_x_intrinsic(nu_below, astro) == 0.0)
@@ -42,8 +43,9 @@ def test_epsilon_x_intrinsic_zero_outside_band(astro: astrophysics) -> None:
 
 
 def test_epsilon_x_intrinsic_positive_in_band(astro: astrophysics) -> None:
-    """X-ray emissivity should be positive within the 0.5–2 keV band."""
+    """X-ray emissivity should be positive within the 0.5-2 keV band."""
     from hyprfine.parameters import conv
+
     nu_in_band = jnp.linspace(0.6 * conv.keV_to_Hz, 1.9 * conv.keV_to_Hz, 20)
     result = calculate_epsilon_x_intrinsic(nu_in_band, astro)
     assert jnp.any(result > 0)
@@ -52,6 +54,7 @@ def test_epsilon_x_intrinsic_positive_in_band(astro: astrophysics) -> None:
 def test_epsilon_x_intrinsic_scales_with_l40(cosmo: cosmology) -> None:
     """X-ray emissivity should scale with L40."""
     from hyprfine.parameters import conv
+
     nu = jnp.linspace(0.6 * conv.keV_to_Hz, 1.9 * conv.keV_to_Hz, 20)
     astro1 = astrophysics(L40=1.0)
     astro2 = astrophysics(L40=10.0)

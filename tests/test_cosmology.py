@@ -34,4 +34,6 @@ def test_n_H_tot_depends_on_omega_b(cosmo: cosmology) -> None:
         ns=cosmo.ns,
         ln1010As=cosmo.ln1010As,
     )
-    assert n_H_tot(jnp.array(50.0), cosmo_high_b) > n_H_tot(jnp.array(50.0), cosmo)
+    assert n_H_tot(jnp.array(50.0), cosmo_high_b) > n_H_tot(
+        jnp.array(50.0), cosmo
+    )

@@ -1,4 +1,4 @@
-"""Plot benchmark results from one or more JSON files produced by benchmark_time.py.
+"""Plot benchmark results from one or more JSON files from benchmark_time.py.
 
 Usage:
     python bin/benchmark_plot.py FILE [FILE ...] [--output benchmark.png]
@@ -10,6 +10,7 @@ the first file; the throughput panel shows all hardware entries overlaid.
 import argparse
 import json
 import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 

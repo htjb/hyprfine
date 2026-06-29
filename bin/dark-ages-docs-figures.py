@@ -1,3 +1,5 @@
+"""Generate figures for the dark ages section of the documentation."""
+
 import sys
 from pathlib import Path
 
@@ -77,15 +79,18 @@ xc_values = vmappedxc(zgrid, xe, Tk, cosmo)
 
 kappa, kappa_HH, kappa_eH, kappa_pH = jax.vmap(kappa, in_axes=(0, 0))(Tk, xe)
 
-def f_to_z(f):
+def f_to_z(f: jnp.ndarray) -> jnp.ndarray:
+    """Convert frequency in MHz to redshift."""
     return 1420.4 / f - 1
 
 
-def z_to_f(z):
+def z_to_f(z: jnp.ndarray) -> jnp.ndarray:
+    """Convert redshift to frequency in MHz."""
     return 1420.4 / (z + 1)
 
 
-def add_z_axis(ax):
+def add_z_axis(ax: plt.Axes) -> None:
+    """Add a secondary x-axis for redshift."""
     secax = ax.secondary_xaxis("top", functions=(f_to_z, z_to_f))
     secax.set_ticks([int(round(f_to_z(f))) for f in range(10, 60, 10)])
     secax.set_xlabel(r"$z$")

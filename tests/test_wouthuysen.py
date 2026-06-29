@@ -61,7 +61,7 @@ def test_epsilon_alpha_intrinsic_break_at_lybeta(astro: astrophysics) -> None:
 def test_epsilon_alpha_tot_zero_for_source_below_observer(
     astro: astrophysics,
 ) -> None:
-    """Total emissivity should be zero when source redshift < observer redshift."""
+    """Total emissivity should be zero z_source < z_21."""
     result = calculate_epsilon_alpha_tot(
         z_source=jnp.array(5.0), z_21=jnp.array(10.0), astro=astro
     )
@@ -71,9 +71,8 @@ def test_epsilon_alpha_tot_zero_for_source_below_observer(
 def test_epsilon_alpha_tot_positive_for_source_above_observer(
     astro: astrophysics,
 ) -> None:
-    """Total emissivity should be positive when source is at higher redshift."""
+    """Total emissivity should be > 0 when source is at higher redshift."""
     result = calculate_epsilon_alpha_tot(
         z_source=jnp.array(12.0), z_21=jnp.array(10.0), astro=astro
     )
     assert jnp.any(result > 0)
-

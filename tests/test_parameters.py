@@ -1,6 +1,6 @@
 """Tests for hyprfine.parameters."""
 
-import pytest
+import pytest  # type: ignore
 
 from hyprfine.parameters import astrophysics, const, cosmology
 
@@ -8,8 +8,12 @@ from hyprfine.parameters import astrophysics, const, cosmology
 def test_cosmology_fields() -> None:
     """Cosmology should have the expected fields with correct values."""
     cosmo = cosmology(
-        H0=67.32, Omega_b=0.0494, Omega_c=0.2664, Y_He=0.2454,
-        ns=0.965, ln1010As=3.044,
+        H0=67.32,
+        Omega_b=0.0494,
+        Omega_c=0.2664,
+        Y_He=0.2454,
+        ns=0.965,
+        ln1010As=3.044,
     )
     assert cosmo.H0 == 67.32
     assert cosmo.Omega_b == 0.0494
@@ -30,7 +34,7 @@ def test_cosmology_defaults() -> None:
 def test_cosmology_wrong_args() -> None:
     """Passing an unknown keyword to cosmology should raise a TypeError."""
     with pytest.raises(TypeError):
-        cosmology(unknown_field=1.0)
+        cosmology(unknown_field=1.0)  # type: ignore
 
 
 def test_astrophysics_fields() -> None:
