@@ -1,5 +1,7 @@
 """Benchmark hyprfine signal generation on CPU (and CUDA GPU if available)."""
 
+import platform
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -64,30 +66,94 @@ astro = astrophysics(
 f_grid = jnp.linspace(5.0, 250.0, 500)  # MHz
 
 
+def get_cpu_name() -> str:
+    system = platform.system()
+    try:
+        if system == "Darwin":
+            for key in ("machdep.cpu.brand_string", "hw.chip_name"):
+                try:
+                    name = subprocess.check_output(
+                        ["sysctl", "-n", key], stderr=subprocess.DEVNULL,
+                    ).decode().strip()
+                    if name:
+                        return name
+                except subprocess.CalledProcessError:
+                    continue
+        elif system == "Linux":
+            with open("/proc/cpuinfo") as fh:
+                for line in fh:
+                    if line.startswith("model name"):
+                        return line.split(":", 1)[1].strip()
+    except Exception:
+        pass
+    return platform.processor() or "CPU"
+
+
+batch_sizes = [1, 2, 4, 8, 16, 32, 64]
+batched_generate = jax.vmap(generate_signal, in_axes=(None, 0, 0))
+cpu_name = get_cpu_name()
+
+
+def make_batched_params(n: int) -> tuple:
+    bc = cosmology(
+        H0=jnp.full(n, H0),
+        Omega_b=jnp.full(n, Omega_b),
+        Omega_c=jnp.full(n, Omega_c),
+        Y_He=jnp.full(n, Y_He),
+        ns=jnp.full(n, ns),
+        ln1010As=jnp.full(n, ln1010As),
+    )
+    ba = astrophysics(
+        epsilon=jnp.full(n, epsilon),
+        alpha_star=jnp.full(n, alpha_star),
+        beta_star=jnp.full(n, beta_star),
+        M_pivot=jnp.full(n, M_pivot),
+        L40=jnp.full(n, L40),
+        alpha_x=jnp.full(n, alpha_x),
+        nu_0=jnp.full(n, E0_keV),
+        alpha_low=jnp.full(n, alpha_low),
+        alpha_high=jnp.full(n, alpha_high),
+        N_alpha=jnp.full(n, N_alpha),
+        f_esc=jnp.full(n, f_esc),
+        N_ion=jnp.full(n, N_ion),
+    )
+    return bc, ba
+
+
 def time_device(device: jax.Device) -> tuple[float, float]:
-    """Time cold and warm signal generation on a given JAX device.
-
-    Args:
-        device: JAX device to run on.
-
-    Returns:
-        Tuple of (cold_time, warm_time) in seconds.
-    """
     f = jax.device_put(f_grid, device)
 
-    # Cold run — includes JIT compilation
     t0 = time.perf_counter()
     sig, xe, T_gas = generate_signal(f, planck, astro)
     jax.block_until_ready(sig)
     cold = time.perf_counter() - t0
 
-    # Warm run
     t0 = time.perf_counter()
     sig, xe, T_gas = generate_signal(f, planck, astro)
     jax.block_until_ready(sig)
     warm = time.perf_counter() - t0
 
     return cold, warm, sig
+
+
+def bench_batched(device: jax.Device) -> list[float]:
+    """Return warm time-per-signal for each batch size."""
+    f = jax.device_put(f_grid, device)
+    times = []
+    for bs in batch_sizes:
+        bc, ba = make_batched_params(bs)
+        bc = jax.device_put(bc, device)
+        ba = jax.device_put(ba, device)
+        # cold — includes compilation for this batch size
+        sigs, _, _ = batched_generate(f, bc, ba)
+        jax.block_until_ready(sigs)
+        # warm
+        t0 = time.perf_counter()
+        sigs, _, _ = batched_generate(f, bc, ba)
+        jax.block_until_ready(sigs)
+        times.append((time.perf_counter() - t0) / bs)
+        print(f"    batch={bs:3d}  {times[-1]:.3f} s/signal")
+    return times
 
 
 # ---------------------------------------------------------------------------
@@ -97,12 +163,13 @@ cpu = jax.devices("cpu")[0]
 print("Benchmarking CPU...")
 cpu_cold, cpu_warm, signal = time_device(cpu)
 print(f"  Cold: {cpu_cold:.3f} s   Warm: {cpu_warm:.3f} s")
-
-results = {"CPU (cold)": cpu_cold, "CPU (warm)": cpu_warm}
+print("  Batch benchmark (CPU):")
+cpu_batch_times = bench_batched(cpu)
 
 # ---------------------------------------------------------------------------
 # Optionally benchmark CUDA GPU
 # ---------------------------------------------------------------------------
+gpu_batch_times = None
 try:
     if not skip_gpu:
         gpus = jax.devices("gpu")
@@ -111,8 +178,8 @@ try:
             print(f"Benchmarking GPU ({gpu.device_kind})...")
             gpu_cold, gpu_warm, _ = time_device(gpu)
             print(f"  Cold: {gpu_cold:.3f} s   Warm: {gpu_warm:.3f} s")
-            results["GPU (cold)"] = gpu_cold
-            results["GPU (warm)"] = gpu_warm
+            print(f"  Batch benchmark (GPU):")
+            gpu_batch_times = bench_batched(gpu)
 except RuntimeError:
     gpus = None
     print("No CUDA GPU found — skipping GPU benchmark.")
@@ -152,19 +219,16 @@ T21c = zeus21.get_T21_coefficients(
 z21_time = time.perf_counter() - t0
 print(f"  {z21_time:.3f} s")
 
-results["zeus21"] = z21_time
-
 # ---------------------------------------------------------------------------
-# Plot: signal + bar chart
+# Plot: signal + time-per-signal vs batch size
 # ---------------------------------------------------------------------------
 fig = plt.figure(figsize=(11, 4.5), constrained_layout=True)
 gs = fig.add_gridspec(1, 3)
 ax_sig = fig.add_subplot(gs[0, :2])
-ax_bar = fig.add_subplot(gs[0, 2])
+ax_batch = fig.add_subplot(gs[0, 2])
 
 # Signal
 z_grid = 1420.4 / np.array(f_grid) - 1
-print("z_grid:", z_grid.min(), "-", z_grid.max())
 ax_sig.plot(
     z_grid, np.array(signal), color="steelblue", lw=1.5, label="hyprfine",
 )
@@ -174,44 +238,32 @@ ax_sig.plot(
 )
 ax_sig.set_xlabel("Redshift $z$")
 ax_sig.set_ylabel(r"$T_{21}$ [mK]")
-ax_sig.set_title("Dark ages 21-cm signal (Planck 2018)")
+ax_sig.set_title("21-cm signal")
 ax_sig.set_xscale("log")
 ax_sig.legend(fontsize=8)
 
-# Bar chart
-labels = list(results.keys())
-print(labels)
-times = list(results.values())
-colours = [
-    "seagreen" if "zeus21" in ll
-    else "steelblue" if "CPU" in ll
-    else "darkorange"
-    for ll in labels
-]
-hatches = [
-    "" if ("warm" in ll.lower() or "zeus21" in ll) else "///"
-    for ll in labels
-]
-bars = ax_bar.bar(
-    labels, times, color=colours, hatch=hatches, edgecolor="white"
+# Time-per-signal vs batch size
+ax_batch.plot(
+    batch_sizes, cpu_batch_times,
+    color="steelblue", marker="o", lw=1.5, label=f"hyprfine ({cpu_name})",
 )
-for bar, t in zip(bars, times):
-    ax_bar.text(
-        bar.get_x() + bar.get_width() / 2,
-        bar.get_height() * 1.01,
-        f"{t:.3f} s",
-        ha="center",
-        va="bottom",
-        fontsize=9,
+if gpu_batch_times is not None:
+    ax_batch.plot(
+        batch_sizes, gpu_batch_times,
+        color="darkorange", marker="s", lw=1.5,
+        label=f"hyprfine ({gpu.device_kind})",
     )
-ax_bar.set_ylabel("Wall time [s]")
-if gpus:
-    ax_bar.set_title(
-        "Signal generation benchmark\n" + "(" + gpu.device_kind + ")"
-    )
-else:
-    ax_bar.set_title("Signal generation benchmark")
-ax_bar.tick_params(axis="x", rotation=15)
+ax_batch.axhline(
+    z21_time, color="seagreen", ls="--", lw=1.5, label="zeus21 (CPU)",
+)
+ax_batch.set_xlabel("Batch size")
+ax_batch.set_ylabel("Time per signal [s]")
+ax_batch.set_title("Throughput scaling")
+ax_batch.set_xscale("log", base=2)
+ax_batch.set_yscale("log")
+ax_batch.set_xticks(batch_sizes)
+ax_batch.set_xticklabels([str(b) for b in batch_sizes])
+ax_batch.legend(fontsize=8)
 
 plt.savefig("bin/benchmark.png", dpi=150)
 print("Saved benchmark.png")
