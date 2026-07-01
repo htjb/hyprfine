@@ -8,11 +8,11 @@ tags:
   - milky way
 authors:
   - name: Harry T. J. Bevins
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0002-4367-3550
     equal-contrib: true
     affiliation: "1, 2" # (Multiple affiliations must be quoted)
 affiliations:
- - name:Astrophysics Group, Cavendish Laboratory, University of Cambridge, J. J. Thomson Avenue, Cambridge, CB3 0US, UK 
+ - name: Astrophysics Group, Cavendish Laboratory, University of Cambridge, J. J. Thomson Avenue, Cambridge, CB3 0US, UK 
    index: 1
  - name: Kavli Institute for Cosmology in Cambridge, University of Cambridge, Madingley Road, Cambridge, CB3 0HA, UK
    index: 2
