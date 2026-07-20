@@ -95,6 +95,7 @@ ax_batch.set_yscale("log")
 bs0 = datasets[0]["batch_sizes"]
 ax_batch.set_xticks(bs0)
 ax_batch.set_xticklabels([str(b) for b in bs0])
+ax_batch.set_yticks([0.05, 0.1, 0.5, 1])
 ax_batch.legend(fontsize=7)
 
 plt.savefig(args.output, dpi=300)

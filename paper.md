@@ -32,6 +32,10 @@ $C^2$-ray [@Mellema2006C2ray] is a numerical code written in Fortran90 focused o
 
 Two widely used semi-numerical codes are 21cmFAST and 21cmSPACE. 21cmFAST, like pyC$^2$ray is an open source code base written with Python and C.
 
+hyprfine is an analytic code and is most similar to zeus21 and ECHO21.
+
+![\textbf{Left:} An example 21-cm signal from hyprfine and zeus21 with the same paraemters. \textbf{Right:} The run time of hyprfine per signal on an AMD Ryzen 5 and a Tesla T4 compared to the value for zeus21. \label{fig:benchmark}](bin/benchmark.png)
+
 # Software design
 
 # Research impact statement
