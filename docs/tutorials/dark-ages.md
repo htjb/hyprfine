@@ -27,18 +27,18 @@ Note that `hyprfine` needs to be evaluated in float64.
 The `cosmology` namedtuple carries all the parameters needed by the signal
 calculation. The fields are:
 
-| Field | Description | Default value |
-|-------|-------------|---------------|
-| `H0` | Hubble constant (km/s/Mpc) | 67.36 |
-| `Omega_b` | Baryon density | 0.049 |
-| `Omega_c` | Cold dark matter density | 0.266 |
-| `Y_He` | Helium mass fraction | 0.245 |
-| `ns` | Scalar spectral index of primordial fluctuations | 0.97 |
-| `ln1010As` | $\ln 10^{10} A_s$ ; Amplitude of primordial power spectrum | 3.044 |
+| Field | Description | Default value | Valid Range |
+|-------|-------------|---------------|-------------|
+| `H0` | Hubble constant (km/s/Mpc) | 67.36 | 20 - 100 |
+| `Omega_b` | Baryon density | 0.049 | 0.005 - 0.1 |
+| `Omega_c` | Cold dark matter density | 0.266 | 0.001 - 0.5 |
+| `Y_He` | Helium mass fraction | 0.245 | 0.1 - 0.4 |
+| `ns` | Scalar spectral index of primordial fluctuations | 0.97 | |
+| `ln1010As` | $\ln 10^{10} A_s$ ; Amplitude of primordial power spectrum | 3.044 | |
 
-Note that for the dark ages `ns` and `ln1010As` are not relevant but they are used
+Note that for the dark ages `ns` and `ln1010As` are not relevant, but they are used
 for the cosmic dawn calculation to calculate the RMS matter density fluctuations and
-mean star formation rate density.
+mean star formation rate density. The default ranges on the other four parameters are defined by the HYREC-2 emulator training data.  
 
 To initiate the cosmology parameters and change their values we write
 
