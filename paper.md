@@ -44,7 +44,7 @@ hyprfine is an analytic code and is most similar to zeus21 and ECHO21.
 | Zeus21 | Analytic | 21-cm global signal, power spectrum, UVLF | 35 - 5 | No | Python | Yes |
 | ECHO21 | Analytic | 21-cm global signal | 1500 - 0 | No | Python | Yes |
 | ARES | Semi-analytic/1D RT | 21-cm global signal and more | 35 - 5 | No | Python | Yes |
-| hyprfine | Analytic | 21-cm global signal | 1500 - 0 | Yes | Python, JAX | Yes |
+| hyprfine | Analytic | 21-cm global signal | 1100 - 1 | Yes | Python, JAX | Yes |
 
 
 
