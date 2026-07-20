@@ -37,7 +37,7 @@ hyprfine is an analytic code and is most similar to zeus21 and ECHO21.
 ![\textbf{Left:} An example 21-cm signal from hyprfine and zeus21 with the same paraemters. \textbf{Right:} The run time of hyprfine per signal on an AMD Ryzen 5 and a Tesla T4 compared to the value for zeus21. \label{fig:benchmark}](bin/benchmark.png)
 
 | Code | Simulation Type | Products | Approx. Redshift | GPU? | Programming Lang./Framework | Open Source |
-|---|---|---|---|---|---|
+|------|-----------------|----------|------------------|------|-----------------------------|-------------|
 | pyC$^2$ray | Numerical |  Spatially resolved ionization field | 21 - 6 |Yes (partial) | Python, Fortran90, C++, CUDA | Yes |
 | 21cmFAST | Semi-numerical | 21-cm simulation box, summary statistics and more | 50 - 6 | Yes (partial) \textbf{Need to check this!} | Python, C | Yes |
 | 21cmSPACE | Semi-numerical | 21-cm simulation box, summary statistics and more | 50 - 6 | No | Matlab, Python | No |
