@@ -26,6 +26,12 @@ bibliography: paper.bib
 
 # State of the field
 
+A number of other 21-cm simulation codes exist, and they fall roughly into three different classes; numerical, semi-numerical and analytic models. 
+
+$C^2$-ray [@Mellema2006C2ray] is a numerical code written in Fortran90 focused on the Epoch of Reionization between redshifts $z=20$ and $z=6$. The radiative transfer algorithm uses ray-tracing to post process cosmological N-body simulations and calculate the ionization field from which the 21-cm signal can be calculated. The recent pyC$^2$ray upgrade uses a novel ray-tracing algorithm written in C++ with CUDA and a combination of Fortran90 and Python to compute the relevant chemistry and provide a user interface. In @Hirling2024pyc2ray the authors benchmarked pyC$^2$ray on an NVIDIA Tesla P100 and performed post-processing of a 349 MPc$^3$ N-body simulation in $\approx$ 2.5 GPU hours. The equivalent simulation using an older version of the code takes days to run on a CPU (13,824 core hours on 128 cores in parallel).
+
+Two widely used semi-numerical codes are 21cmFAST and 21cmSPACE. 21cmFAST, like pyC$^2$ray is an open source code base written with Python and C.
+
 # Software design
 
 # Research impact statement
