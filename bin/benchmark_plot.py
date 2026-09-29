@@ -60,11 +60,14 @@ def find(substr: str, attr: str) -> dict | None:
 
 
 t4 = find("T4", "gpu_name")
+A100 = find("A100", "gpu_name")
 ryzen = find("Ryzen", "cpu_name")
 if t4 is None:
     sys.exit("No dataset with a Tesla T4 GPU found in the inputs.")
 if ryzen is None:
     sys.exit("No dataset with an AMD Ryzen CPU found in the inputs.")
+if A100 is None:
+    print("No dataset with an NVIDIA A100 GPU found in the inputs.")
 
 # Trim the trailing " with Radeon Graphics" (etc.) for a tidier label.
 ryzen_name = ryzen["cpu_name"].split(" with ")[0]
@@ -74,6 +77,11 @@ ax_batch.plot(
     t4["batch_sizes"], t4["gpu_batch_times"],
     color="steelblue", marker="s", lw=1.5, ls="--",
     label=f"hyprfine ({t4['gpu_name']})",
+)
+ax_batch.plot(
+    A100["batch_sizes"], A100["gpu_batch_times"],
+    color="crimson", marker="s", lw=1.5, ls="--",
+    label=f"hyprfine ({A100['gpu_name']})"
 )
 # hyprfine on the AMD Ryzen CPU
 ax_batch.plot(
