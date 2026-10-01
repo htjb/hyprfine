@@ -53,7 +53,7 @@ Analytic codes compute the sky-averaged quantities directly and are the closest 
 ![\textbf{Left:} An example 21-cm signal from hyprfine and zeus21 with approximately the same paraemters. \textbf{Right:} The run time of hyprfine per signal on an AMD Ryzen 5, a Tesla T4 and an A100 compared to the value for zeus21. \label{fig:benchmark}](bin/benchmark.png)
 
 | Code | Simulation Type | Products | Approx. Redshift | GPU? | Programming Lang./Framework |
-|------|-----------------|----------|------------------|------|-----------------------------|
+|---------|-------------------|--------------------------|-------------|------|----------------------|
 | pyC$^2$ray | Numerical |  Spatially resolved ionization field | 21 - 6 |Yes (partial) | Python, Fortran90, C++, CUDA |
 | 21cmFAST | Semi-numerical | 21-cm simulation box, summary statistics and more | 50 - 6 | No | Python, C |
 | Zeus21 | Analytic | 21-cm global signal, power spectrum, UVLF | 35 - 5 | No | Python |
