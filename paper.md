@@ -9,7 +9,6 @@ tags:
 authors:
   - name: Harry T. J. Bevins
     orcid: 0000-0002-4367-3550
-    equal-contrib: true
     affiliation: "1, 2"
 affiliations:
  - name: Department of Physics, Imperial College London, Blackett Laboratory, Prince Consort Road, London SW7 2AZ, UK
@@ -24,17 +23,17 @@ bibliography: paper.bib
 
 The field of 21-cm Cosmology aims to observe the evolution of the early universe between redshifts of 1100 and 6 (corresponding to roughly 400,000 years after the big bang to 1 billion years) through the 21-cm emission from neutral hydrogen. The signal arises from the spin flip transition in neutral hydrogen and the relative number of atoms with aligned and anti-aligned proton and electron spins is characterized by a statistical temperature called the spin temperature. At various times the spin temperature $T_s$, is driven by interactions with Cosmic Microwave Background (CMB) photons with a wavelength of 21-cm, collisions between hydrogen atoms in the gas ($z \approx 300 - 30$), light from the first stars ($z \approx 30 -6$) and X-ray emission from exotic objects like X-ray binaries ($z \approx 20 - 6$). These process couple the spin temperature to the gas temperature $T_k$ which is cooler than the CMB $T_\gamma$ and so the 21-cm signal is seen in absorption against the radio background at different epochs.
 
-\texttt{hyprfine} is an analytic simulation of the sky-averaged 21-cm signal from $z=1100 - 6$ written using JAX and Python for native GPU capabilities. It models the average temperate of the 21-cm signal over cosmic time given by
+\texttt{hyprfine} is an analytic simulation of the sky-averaged 21-cm signal from $z=1100 - 6$ written using JAX and Python for native GPU capabilities. It models the average temperature of the 21-cm signal over cosmic time given by
 
 $$T_{21} = 54 (1 - x_e) \frac{(1 - Y_{\rm He})}{0.76} \frac{\Omega_b h^2}{0.02242} \sqrt{\frac{0.1424}{\Omega_m h^2}\frac{1+z}{40}}\bigg(1 - \frac{T_{\rm CMB}}{T_s}\bigg)$$
 
-as a function of the $\Lambda$-CDM cosmology parameters and the astrophysics of the first stars and galaxies. As far as we are aware, the code is the first analytic GPU native simulation of the 21-cm signal. It runs in a fraction of a second, parellelises efficiently across a GPU and is differentiable up to $z=35$.
+as a function of the $\Lambda$-CDM cosmology parameters and the astrophysics of the first stars and galaxies. As far as we are aware, the code is the first analytic GPU native simulation of the 21-cm signal. It runs in a fraction of a second, parellelises efficiently across a GPU and is differentiable through the Dark Ages ($z \geq 35$).
 
 # Statement of need
 
 A number of global or sky-averaged 21-cm signal experiments have collected data in recent years or are currently collecting data (EDGES @Bowman2018EDGES; SARAS @Singh2022SARAS, @Bevins2022SARAS; REACH @Acedo2022REACH). In order to analyse this data researchers rely on Bayesian inference techniques (@Anstey2021BayesianForegrounds, @Bevins2022SARAS, @Bevins2022SARAS2, @Acedo2022REACH, @Pochinda2024PopIII, @Dhandha2025JWST21cm1, @Dhandha2025JWST21cm2, @Tutt2026GPU21cm) and neural network emulators (@Cohen202021cmGEM, @Bevins2021GLOBALEMU, @Bye2022VAE21cm, @Breitman2024EMU21cm, @DorigoJones2024LSTM21cm, @DorigoJones2025KAN21cm) of complex semi-numerical simulations (@Mesinger2011FAST21cm, @Murray202FAST21cm, @Visbal2012FirstStars, @Fialkov2012RelativeMotion).
 
-These semi-numerical simulations take order hours to run per parameter set and in inference loops the model has to be called 100,000s to millions of time. As a result emulators have become a crucial piece of infrastructure in the field with the state-of-the-art emulators being able to accurate recover the 21-cm signal in a fraction of a second. However, emulators are inherently approximations of the underlying physics model (@Bevins2025PosteriorRecovery) and \texttt{hyprfine} offers a millisecond evaluation of the signal at no cost to accuracy.
+These semi-numerical simulations take order hours to run per parameter set and in inference loops the model has to be called 100,000s to millions of time. As a result emulators have become a crucial piece of infrastructure in the field with the state-of-the-art emulators being able to accurately recover the 21-cm signal in a fraction of a second. However, emulators are inherently approximations of the underlying physics model (@Bevins2025PosteriorRecovery) and \texttt{hyprfine} offers a millisecond evaluation of the signal at no cost to accuracy.
 
 \texttt{hyprfine} currently includes key affects like collisional coupling, the Wouthuysen-Field and X-ray heating. Additional effects such as Lyman-$\alpha$ heating can easily be added and the code developed while maintaining the parallelizm afforded by modern GPU architectures.
 
@@ -50,16 +49,16 @@ Analytic codes compute the sky-averaged quantities directly and are the closest 
 
 \texttt{hyprfine} follows these codes in its physics, for example in using the star formation rate density model of @Munoz2023Zeus21, and \autoref{fig:benchmark} compares it with Zeus21 for identical parameters. The difference is where and how it runs. Making an existing code GPU-native and differentiable would mean rewriting every integrator, interpolator and ODE solver in JAX and replacing calls to external CPU codes (e.g. CLASS [@Blas2011CLASS2] in Zeus21, recombination codes [@Lee2020HYREC2]). That amounts to a rewrite, so \texttt{hyprfine} was written as a new, JAX-native package. It is the first analytic 21-cm code that runs natively on a GPU, evaluates large batches of models in parallel and provides gradients with respect to its parameters.
 
-![\textbf{Left:} An example 21-cm signal from hyprfine and zeus21 with approximately the same paraemters. \textbf{Right:} The run time of hyprfine per signal on an AMD Ryzen 5, a Tesla T4 and an A100 compared to the value for zeus21. \label{fig:benchmark}](bin/benchmark.png)
+![\textbf{Left:} An example 21-cm signal from hyprfine and zeus21 with approximately the same parameters. \textbf{Right:} The run time of hyprfine per signal on an AMD Ryzen 5, a Tesla T4 and an A100 compared to the value for zeus21. \label{fig:benchmark}](bin/benchmark.png)
 
 | Code | Simulation Type | Products | Approx. Redshift | GPU? | Programming Lang./Framework |
-|---------|-------------------|--------------------------|-------------|------|----------------------|
+|---------|-------------------|--------------------------|-------------|--------|-------------------------|
 | pyC$^2$ray | Numerical |  Spatially resolved ionization field | 21 - 6 |Yes (partial) | Python, Fortran90, C++, CUDA |
 | 21cmFAST | Semi-numerical | 21-cm simulation box, summary statistics and more | 50 - 6 | No | Python, C |
 | Zeus21 | Analytic | 21-cm global signal, power spectrum, UVLF | 35 - 5 | No | Python |
 | ECHO21 | Analytic | 21-cm global signal | 1500 - 0 | No | Python |
 | ARES | Semi-analytic/1D RT | 21-cm global signal and more | 35 - 5 | No | Python |
-| hyprfine | Analytic | 21-cm global signal | 1100 - 0 | Yes | Python, JAX |
+| \texttt{hyprfine} | Analytic | 21-cm global signal | 1100 - 6 | Yes | Python, JAX |
 
 : An inexhaustive list of publicly available 21-cm simulation codes with their simulation type, outputs, approximate redshift range, GPU support, and implementation language. \label{tab:codes}
 
@@ -84,9 +83,9 @@ More broadly, \texttt{hyprfine} targets a bottleneck in current global 21-cm ana
 
 # Conclusions
 
-\texttt{hyprfine} is in actively development. We are currently assessing the feasibility of adding additional physics into the model including Lyman-$\alpha$ heating [@Reis2021LyAlpha21cm] and alternative dark matter models. Furthermore, we aim to make the Cosmic Dawn component of the code differentiable and will explore alternative ODE solvers like modax [@Berry2026MODAX] and GRADSOLVER [@SpurioMancini2026GRADSOLVE]. In the long run we hope to see \texttt{hyprfine} evolve to include a GPU compatible and differentiable semi-analytic model of the 21-cm signal that can be rapidly evaluated either during inference or alternatively to generate larger training data sets for more accurate emulation than is possible with existing frameworks. A GPU compatible model of the 21-cm signal with a differentiable Dark Ages component is a timely addition to the 21-cm inference landscape as researchers move their pipelines on to the GPU [@Tutt2026GPU21cm, @Tutt2026Beams] and a number of experiments targetting observations of the dark ages signal from the moon come online [@de2026cosmocube].
+\texttt{hyprfine} is in active development. We are currently assessing the feasibility of adding additional physics into the model including Lyman-$\alpha$ heating [@Reis2021LyAlpha21cm] and alternative dark matter models. Furthermore, we aim to make the Cosmic Dawn component of the code differentiable and will explore alternative ODE solvers like modax [@Berry2026MODAX] and GRADSOLVE [@SpurioMancini2026GRADSOLVE]. In the long run we hope to see \texttt{hyprfine} evolve to include a GPU compatible and differentiable semi-analytic model of the 21-cm signal that can be rapidly evaluated either during inference or alternatively to generate larger training data sets for more accurate emulation than is possible with existing frameworks. A GPU compatible model of the 21-cm signal with a differentiable Dark Ages component is a timely addition to the 21-cm inference landscape as researchers move their pipelines on to the GPU [@Tutt2026GPU21cm; @Tutt2026Beams] and a number of experiments targeting observations of the dark ages signal from the moon come online [@de2026cosmocube].
 
-\texttt{hyprfine} offers a GPU compatible way to model the 21-cm signal across a large period of cosmic history, is differentiable through the dark ages and parallisable.
+\texttt{hyprfine} offers a GPU compatible way to model the 21-cm signal across a large period of cosmic history, is differentiable through the dark ages and parallelisable.
 
 # AI usage disclosure
 
